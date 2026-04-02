@@ -15,7 +15,7 @@ const Rounds = {
       self.game = game;
       self.onComplete = onComplete;
       self.state = {
-        cards: [game.deck.draw(), game.deck.draw(), game.deck.draw()],
+        cards: game.allPlayerIndices.map(() => game.deck.draw()),
         currentPlayer: 0,
         lastClaim: null,
         lastClaimPlayer: -1,
@@ -65,8 +65,8 @@ const Rounds = {
         };
 
       } else if (s.phase === 'challenge') {
-        const nextPlayer = (s.lastClaimPlayer + 1) % 3;
-        const isFinalChallenge = s.claimCount >= 3;
+        const nextPlayer = (s.lastClaimPlayer + 1) % g.playerCount;
+        const isFinalChallenge = s.claimCount >= g.playerCount;
         area.innerHTML = `
           <div class="turn-indicator">${g.getAvatarEmoji(nextPlayer)} ${g.players[nextPlayer].name}'s Turn</div>
           <p class="text-center mt-8">
@@ -170,7 +170,7 @@ const Rounds = {
       self.state = {
         total: 0,
         cardsPlayed: [],
-        activePlayers: [0, 1, 2],
+        activePlayers: game.allPlayerIndices.slice(),
         currentTurn: 0,
         lastStacker: -1,
         bailed: []
@@ -283,7 +283,7 @@ const Rounds = {
 
       // Drawer is random
       self.state = {
-        drawer: Math.floor(Math.random() * 3),
+        drawer: Math.floor(Math.random() * game.playerCount),
         card: game.deck.draw()
       };
 
@@ -319,7 +319,7 @@ const Rounds = {
 
       if (card.suit === 'hearts') {
         // Mates - pick someone to drink with
-        const otherPlayers = [0,1,2].filter(i => i !== s.drawer);
+        const otherPlayers = g.allPlayerIndices.filter(i => i !== s.drawer);
         actionArea.innerHTML = `
           <div class="suit-icon" style="color:#CC2200">${SUIT_SYMBOLS.hearts}</div>
           <div class="fate-instruction">MATES! Pick a drinking buddy (${baseFingers} fingers each)</div>
@@ -367,7 +367,8 @@ const Rounds = {
             clearInterval(wfInterval);
             // Everyone gets fingers based on time
             const fingers = Math.min(Math.ceil(wfTime / 3), 5);
-            const penalties = { 0: fingers, 1: fingers, 2: fingers };
+            const penalties = {};
+            g.allPlayerIndices.forEach(i => { penalties[i] = fingers; });
             self.onComplete(penalties);
           };
           actionArea.appendChild(stopBtn);
@@ -381,7 +382,7 @@ const Rounds = {
           'Cocktails', 'Pizza toppings', 'Superheroes', 'Celebrities'
         ];
         const cat = categories[Math.floor(Math.random() * categories.length)];
-        self.state.categoryPlayer = (s.drawer + 1) % 3;
+        self.state.categoryPlayer = (s.drawer + 1) % g.playerCount;
 
         actionArea.innerHTML = `
           <div class="suit-icon">${SUIT_SYMBOLS.clubs}</div>
@@ -395,7 +396,7 @@ const Rounds = {
         `;
 
         document.getElementById('btn-pass').onclick = () => {
-          self.state.categoryPlayer = (self.state.categoryPlayer + 1) % 3;
+          self.state.categoryPlayer = (self.state.categoryPlayer + 1) % g.playerCount;
           const turnEl = document.getElementById('cat-turn');
           if (turnEl) {
             const cp = self.state.categoryPlayer;
@@ -466,7 +467,7 @@ const Rounds = {
           <p class="text-dim">Cards will appear here...</p>
         </div>
         <div class="snap-buttons-row mt-16" id="snap-buttons">
-          ${[0,1,2].map(i => `
+          ${game.allPlayerIndices.map(i => `
             <button class="snap-btn" data-player="${i}" id="snap-btn-${i}">
               <span class="snap-emoji">${game.getAvatarEmoji(i)}</span>
               <span>SNAP!</span>
@@ -478,7 +479,7 @@ const Rounds = {
       `;
 
       // Disable snap buttons initially
-      [0,1,2].forEach(i => {
+      game.allPlayerIndices.forEach(i => {
         document.getElementById(`snap-btn-${i}`).disabled = true;
       });
 
@@ -494,7 +495,7 @@ const Rounds = {
       const g = self.game;
 
       // Enable snap buttons
-      [0,1,2].forEach(i => {
+      g.allPlayerIndices.forEach(i => {
         const btn = document.getElementById(`snap-btn-${i}`);
         btn.disabled = false;
         btn.classList.add('snap-btn-active');
@@ -526,7 +527,9 @@ const Rounds = {
                 s.matchFound = true;
                 clearInterval(s.intervalId);
                 // Nobody snapped - everyone drinks
-                self.onComplete({ 0: 2, 1: 2, 2: 2 });
+                const p = {};
+                g.allPlayerIndices.forEach(i => { p[i] = 2; });
+                self.onComplete(p);
               }
             }, 3000);
           }
@@ -555,9 +558,8 @@ const Rounds = {
         self.area.classList.add('snap-flash');
 
         g.winRound(playerIndex);
-        // Winner assigns 3 fingers, slowest gets 2
-        // For simplicity: winner picks who gets 3, others get nothing extra
-        const others = [0,1,2].filter(i => i !== playerIndex);
+        // Winner picks who gets 3 fingers
+        const others = g.allPlayerIndices.filter(i => i !== playerIndex);
 
         self.area.innerHTML = `
           <h3 class="text-gold text-center sparkle">SNAP! ${g.players[playerIndex].name} wins!</h3>
@@ -611,7 +613,7 @@ const Rounds = {
       self.state = {
         currentCard: game.deck.draw(),
         chain: 1,
-        currentPlayer: Math.floor(Math.random() * 3),
+        currentPlayer: Math.floor(Math.random() * game.playerCount),
         totalCorrect: 0
       };
 
@@ -665,7 +667,7 @@ const Rounds = {
           // Survived! Safe and assign 3 fingers
           g.winRound(s.currentPlayer);
           const winner = s.currentPlayer;
-          const others = [0,1,2].filter(i => i !== winner);
+          const others = g.allPlayerIndices.filter(i => i !== winner);
 
           self.area.innerHTML = `
             <h3 class="text-gold text-center sparkle">SURVIVED THE GAUNTLET!</h3>
@@ -694,7 +696,7 @@ const Rounds = {
         }
 
         // Correct but chain continues - pass to next player
-        s.currentPlayer = (s.currentPlayer + 1) % 3;
+        s.currentPlayer = (s.currentPlayer + 1) % g.playerCount;
 
         self.area.innerHTML = `
           <h3 class="text-gold text-center">Correct!</h3>
@@ -735,7 +737,7 @@ const Rounds = {
       self.onComplete = onComplete;
       self.area = area;
       self.state = {
-        picks: [-1, -1, -1],
+        picks: new Array(game.playerCount).fill(-1),
         currentPicker: 0,
         revealed: false
       };
@@ -749,7 +751,7 @@ const Rounds = {
       const g = self.game;
       const cp = s.currentPicker;
 
-      if (cp >= 3) {
+      if (cp >= g.playerCount) {
         self.reveal();
         return;
       }
@@ -793,7 +795,7 @@ const Rounds = {
       self.area.innerHTML = `
         <h3 class="text-gold text-center">REVEAL!</h3>
         <div class="stagger mt-16" style="display:flex;flex-direction:column;gap:12px;align-items:center">
-          ${[0,1,2].map(i => `
+          ${g.allPlayerIndices.map(i => `
             <div class="number-reveal" style="display:flex;align-items:center;gap:12px">
               <span>${g.getAvatarEmoji(i)} ${g.players[i].name}</span>
               <span class="gambit-num selected" style="pointer-events:none">${picks[i]}</span>
@@ -807,38 +809,43 @@ const Rounds = {
         const penalties = {};
         const resultArea = document.getElementById('gambit-result');
 
-        // Check matches
-        const allSame = picks[0] === picks[1] && picks[1] === picks[2];
-        const p01 = picks[0] === picks[1];
-        const p02 = picks[0] === picks[2];
-        const p12 = picks[1] === picks[2];
+        // Count occurrences of each number
+        const freq = {};
+        picks.forEach((v, i) => {
+          if (!freq[v]) freq[v] = [];
+          freq[v].push(i);
+        });
+        const groups = Object.entries(freq); // [[val, [playerIndices]], ...]
+
+        const allSame = groups.length === 1;
+        const allDifferent = groups.length === picks.length;
 
         if (allSame) {
           // Cursed round - everyone drinks their number
-          resultArea.innerHTML = `<p class="text-red text-center shake">CURSED! All picked ${picks[0]}! Everyone drinks ${picks[0]} fingers!</p>`;
-          penalties[0] = picks[0];
-          penalties[1] = picks[1];
-          penalties[2] = picks[2];
-        } else if (p01 || p02 || p12) {
-          // Two match - odd one out assigns
-          let oddOne, matchers, matchVal;
-          if (p01) { oddOne = 2; matchers = [0, 1]; matchVal = picks[0]; }
-          else if (p02) { oddOne = 1; matchers = [0, 2]; matchVal = picks[0]; }
-          else { oddOne = 0; matchers = [1, 2]; matchVal = picks[1]; }
-
-          resultArea.innerHTML = `<p class="text-gold text-center">${g.players[oddOne].name} is the odd one out! ${g.players[matchers[0]].name} and ${g.players[matchers[1]].name} both picked ${matchVal} - they each drink ${matchVal} fingers!</p>`;
-          penalties[matchers[0]] = matchVal;
-          penalties[matchers[1]] = matchVal;
-          g.winRound(oddOne);
-        } else {
-          // All different - lowest drinks
+          const val = picks[0];
+          resultArea.innerHTML = `<p class="text-red text-center shake">CURSED! All picked ${val}! Everyone drinks ${val} fingers!</p>`;
+          g.allPlayerIndices.forEach(i => { penalties[i] = val; });
+        } else if (allDifferent) {
+          // All different - lowest drinks their number
           const minVal = Math.min(...picks);
           const loser = picks.indexOf(minVal);
           resultArea.innerHTML = `<p class="text-red text-center">${g.players[loser].name} picked the lowest (${minVal}) and drinks ${minVal} fingers!</p>`;
           penalties[loser] = minVal;
-          // Winner is highest
           const maxVal = Math.max(...picks);
           g.winRound(picks.indexOf(maxVal));
+        } else {
+          // Some matching - find the biggest matching group, they drink
+          // Odd ones out are safe (and if only 1, they win)
+          const sorted = groups.sort((a, b) => b[1].length - a[1].length);
+          const biggestGroup = sorted[0];
+          const matchVal = parseInt(biggestGroup[0]);
+          const matchers = biggestGroup[1];
+          const oddOnes = g.allPlayerIndices.filter(i => !matchers.includes(i));
+
+          const matcherNames = matchers.map(i => g.players[i].name).join(' and ');
+          resultArea.innerHTML = `<p class="text-gold text-center">${matcherNames} all picked ${matchVal} - they each drink ${matchVal} fingers!</p>`;
+          matchers.forEach(i => { penalties[i] = matchVal; });
+          if (oddOnes.length > 0) g.winRound(oddOnes[0]);
         }
 
         setTimeout(() => self.onComplete(penalties), 2500);

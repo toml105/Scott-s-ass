@@ -47,15 +47,28 @@ const ROUND_INFO = {
 
 class GameState {
   constructor() {
+    this.playerCount = 3;
     this.reset();
   }
 
-  reset() {
-    this.players = [
-      { name: 'Bloke #1', avatar: 'beer', fingers: 0, immunity: 1, roundsWon: 0 },
-      { name: 'Bloke #2', avatar: 'whisky', fingers: 0, immunity: 1, roundsWon: 0 },
-      { name: 'Bloke #3', avatar: 'wine', fingers: 0, immunity: 1, roundsWon: 0 }
+  reset(playerCount) {
+    if (playerCount) this.playerCount = playerCount;
+    const defaults = [
+      { name: 'Bloke #1', avatar: 'beer' },
+      { name: 'Bloke #2', avatar: 'whisky' },
+      { name: 'Bloke #3', avatar: 'wine' },
+      { name: 'Bloke #4', avatar: 'cocktail' }
     ];
+    this.players = [];
+    for (let i = 0; i < this.playerCount; i++) {
+      this.players.push({
+        name: defaults[i].name,
+        avatar: defaults[i].avatar,
+        fingers: 0,
+        immunity: 1,
+        roundsWon: 0
+      });
+    }
     this.currentRound = 0;
     this.roundOrder = [];
     this.activeRules = [];
@@ -164,11 +177,17 @@ class GameState {
   }
 
   getLoser() {
-    return this.getRankings()[2];
+    const r = this.getRankings();
+    return r[r.length - 1];
   }
 
   getWinner() {
     return this.getRankings()[0];
+  }
+
+  // Helper: array of all player indices [0, 1, 2] or [0, 1, 2, 3]
+  get allPlayerIndices() {
+    return Array.from({ length: this.playerCount }, (_, i) => i);
   }
 
   getAvatarEmoji(playerIndex) {

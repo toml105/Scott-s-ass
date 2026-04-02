@@ -6,6 +6,7 @@
   'use strict';
 
   let game;
+  let selectedPlayerCount = 3;
 
   // Register service worker
   if ('serviceWorker' in navigator) {
@@ -34,9 +35,23 @@
 
   // --- Player Setup ---
   function setupPlayerSetup() {
+    // Player count toggle
+    document.querySelectorAll('.count-btn').forEach(btn => {
+      btn.onclick = () => {
+        document.querySelectorAll('.count-btn').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        selectedPlayerCount = parseInt(btn.dataset.count);
+
+        // Show/hide 4th player input
+        const p3group = document.querySelector('.player-input-group[data-player="3"]');
+        if (p3group) {
+          p3group.style.display = selectedPlayerCount >= 4 ? 'block' : 'none';
+        }
+      };
+    });
+
     // Avatar selection
     document.querySelectorAll('.player-input-group').forEach(group => {
-      const playerIdx = parseInt(group.dataset.player);
       group.querySelectorAll('.avatar-btn').forEach(btn => {
         btn.onclick = () => {
           group.querySelectorAll('.avatar-btn').forEach(b => b.classList.remove('selected'));
@@ -47,17 +62,18 @@
 
     // Begin game
     document.getElementById('btn-begin').onclick = () => {
-      game.reset();
+      game.reset(selectedPlayerCount);
 
       // Read player names and avatars
-      document.querySelectorAll('.player-input-group').forEach(group => {
-        const idx = parseInt(group.dataset.player);
+      for (let idx = 0; idx < selectedPlayerCount; idx++) {
+        const group = document.querySelector(`.player-input-group[data-player="${idx}"]`);
+        if (!group) continue;
         const nameInput = group.querySelector('.player-name-input');
         const selectedAvatar = group.querySelector('.avatar-btn.selected');
 
         game.players[idx].name = nameInput.value.trim() || `Bloke #${idx + 1}`;
         game.players[idx].avatar = selectedAvatar ? selectedAvatar.dataset.avatar : 'beer';
-      });
+      }
 
       startGame();
     };
@@ -65,6 +81,7 @@
 
   // --- Game Flow ---
   function startGame() {
+    UI.setupPlayerChips(game);
     UI.showScreen('game');
     UI.updatePlayerBar(game);
     startRound();
@@ -89,7 +106,7 @@
     UI.showRoundIntro(game, () => {
       // After player taps "Deal Me In", check skull card then launch
       if (game.currentRound === game.skullCardRound && game.skullKing < 0) {
-        const skullPlayer = Math.floor(Math.random() * 3);
+        const skullPlayer = Math.floor(Math.random() * game.playerCount);
         game.skullKing = skullPlayer;
         UI.showSkullCardEvent(game, skullPlayer, () => {
           launchRound(roundType, area);
@@ -117,15 +134,15 @@
   function onRoundComplete(penalties, special) {
     // Handle special: 'assign' means winner assigns 2 fingers
     if (special === 'assign') {
-      // Find the round winner (most recent)
-      const rankings = game.getRankings();
-      const winner = rankings[0].index; // Player with least fingers likely won
-      // Actually find who won this round
-      let roundWinner = -1;
-      for (let i = 0; i < 3; i++) {
-        if (game.players[i].roundsWon > 0) roundWinner = i;
+      // Find who won this round (highest roundsWon)
+      let roundWinner = 0;
+      let maxWins = -1;
+      for (let i = 0; i < game.playerCount; i++) {
+        if (game.players[i].roundsWon > maxWins) {
+          maxWins = game.players[i].roundsWon;
+          roundWinner = i;
+        }
       }
-      if (roundWinner < 0) roundWinner = 0;
 
       UI.showAssignOverlay(game, roundWinner, 2, (target) => {
         if (!penalties) penalties = {};
@@ -139,8 +156,6 @@
 
   function showPenalties(penalties) {
     UI.showDrinkScreen(game, penalties, () => {
-      // Grant immunity to round winner if they don't have one
-      // (Winner was already recorded by the round)
       game.advanceRound();
       startRound();
     });
@@ -164,7 +179,7 @@
 
   function setupEndScreen() {
     document.getElementById('btn-play-again').onclick = () => {
-      game.reset();
+      game.reset(selectedPlayerCount);
       UI.showScreen('setup');
     };
   }

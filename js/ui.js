@@ -23,14 +23,27 @@ const UI = {
     this.currentScreen = name;
   },
 
+  // Show/hide 4th player chip in game board
+  setupPlayerChips(game) {
+    const p3chip = document.getElementById('p3-chip');
+    if (p3chip) {
+      p3chip.style.display = game.playerCount >= 4 ? 'flex' : 'none';
+    }
+  },
+
   // Update the player bar at top of game screen
   updatePlayerBar(game) {
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < game.playerCount; i++) {
       const p = game.players[i];
-      document.getElementById(`p${i}-avatar`).textContent = game.getAvatarEmoji(i);
-      document.getElementById(`p${i}-name`).textContent = p.name;
-
+      const avatarEl = document.getElementById(`p${i}-avatar`);
+      const nameEl = document.getElementById(`p${i}-name`);
       const fingersEl = document.getElementById(`p${i}-fingers`);
+      const immunityEl = document.getElementById(`p${i}-immunity`);
+      if (!avatarEl) continue;
+
+      avatarEl.textContent = game.getAvatarEmoji(i);
+      nameEl.textContent = p.name;
+
       const oldVal = parseInt(fingersEl.textContent) || 0;
       fingersEl.textContent = p.fingers;
       if (p.fingers > oldVal) {
@@ -38,7 +51,6 @@ const UI = {
         setTimeout(() => fingersEl.classList.remove('count-pop'), 400);
       }
 
-      const immunityEl = document.getElementById(`p${i}-immunity`);
       if (p.immunity <= 0) {
         immunityEl.classList.add('used');
       } else {
@@ -53,8 +65,10 @@ const UI = {
     document.getElementById('round-multiplier').textContent = game.multiplierLabel;
 
     const info = game.currentRoundInfo;
-    document.getElementById('round-type-name').innerHTML = `${info.icon} ${info.name}`;
-    document.getElementById('round-type-desc').textContent = info.desc;
+    if (info) {
+      document.getElementById('round-type-name').innerHTML = `${info.icon} ${info.name}`;
+      document.getElementById('round-type-desc').textContent = info.desc;
+    }
   },
 
   // Update active rules display
@@ -112,7 +126,7 @@ const UI = {
     const scaledPenalties = {};
     let hasPenalties = false;
 
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < game.playerCount; i++) {
       const raw = penalties[i] || 0;
       if (raw <= 0) continue;
       hasPenalties = true;
@@ -219,7 +233,6 @@ const UI = {
       btn.onclick = () => {
         const target = parseInt(btn.dataset.player);
         scaledPenalties[target] = scaledPenalties[target] * 2;
-        // Update the displayed fingers
         const fEl = container.querySelector(`.drink-card-fingers[data-player="${target}"]`);
         if (fEl) {
           fEl.textContent = scaledPenalties[target];
@@ -261,27 +274,32 @@ const UI = {
   showEndScreen(game) {
     const rankings = game.getRankings();
     const container = document.getElementById('end-rankings');
+    const pc = game.playerCount;
 
-    const medals = ['&#128081;', '&#129352;', '&#128128;'];
-    const titles = ['Pub Legend', 'Survivor', 'Shame King'];
+    const medals = pc === 4
+      ? ['&#128081;', '&#129352;', '&#129353;', '&#128128;']
+      : ['&#128081;', '&#129352;', '&#128128;'];
+    const titles = pc === 4
+      ? ['Pub Legend', 'Solid Effort', 'Barely Standing', 'Shame King']
+      : ['Pub Legend', 'Survivor', 'Shame King'];
 
     container.innerHTML = rankings.map((p, rank) => `
-      <div class="end-rank ${rank === 0 ? 'winner' : ''} ${rank === 2 ? 'loser' : ''} slide-up" style="animation-delay:${rank * 0.2}s">
-        <span class="rank-position">${medals[rank]}</span>
+      <div class="end-rank ${rank === 0 ? 'winner' : ''} ${rank === pc - 1 ? 'loser' : ''} slide-up" style="animation-delay:${rank * 0.2}s">
+        <span class="rank-position">${medals[rank] || ''}</span>
         <span class="sb-avatar">${game.getAvatarEmoji(p.index)}</span>
         <div class="rank-info">
           <div class="rank-name">${p.name}</div>
-          <div class="rank-title">${titles[rank]}</div>
+          <div class="rank-title">${titles[rank] || ''}</div>
         </div>
         <span class="rank-fingers">${p.fingers} fingers</span>
       </div>
     `).join('');
 
-    const loser = rankings[2];
+    const loser = rankings[pc - 1];
     document.getElementById('end-punishment').innerHTML = `
       <strong>&#9760; Punishment Round!</strong><br>
       ${loser.name} must skull the rest of their beer<br>
-      OR do a dare chosen by the other two!
+      OR do a dare chosen by the others!
     `;
 
     this.showScreen('end');
@@ -289,7 +307,7 @@ const UI = {
 
   // Show assign fingers overlay (for Tower of Risk winner)
   showAssignOverlay(game, winnerIndex, fingers, onAssign) {
-    const others = [0,1,2].filter(i => i !== winnerIndex);
+    const others = game.allPlayerIndices.filter(i => i !== winnerIndex);
     const overlay = document.createElement('div');
     overlay.className = 'message-overlay';
     overlay.innerHTML = `

@@ -218,6 +218,39 @@ html, body {
   margin-bottom: 24px;
 }
 
+.player-count-selector {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.count-toggle {
+  display: flex;
+  gap: 4px;
+}
+
+.count-btn {
+  width: 44px;
+  height: 44px;
+  border: 2px solid var(--wood-light);
+  border-radius: 8px;
+  background: var(--wood);
+  color: var(--cream);
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.count-btn.selected {
+  border-color: var(--gold);
+  background: var(--gold);
+  color: var(--wood-dark);
+}
+
 .player-inputs {
   display: flex;
   flex-direction: column;
