@@ -42,11 +42,11 @@
         btn.classList.add('selected');
         selectedPlayerCount = parseInt(btn.dataset.count);
 
-        // Show/hide 4th player input
+        // Show/hide extra player inputs
         const p3group = document.querySelector('.player-input-group[data-player="3"]');
-        if (p3group) {
-          p3group.style.display = selectedPlayerCount >= 4 ? 'block' : 'none';
-        }
+        const p4group = document.querySelector('.player-input-group[data-player="4"]');
+        if (p3group) p3group.style.display = selectedPlayerCount >= 4 ? 'block' : 'none';
+        if (p4group) p4group.style.display = selectedPlayerCount >= 5 ? 'block' : 'none';
       };
     });
 

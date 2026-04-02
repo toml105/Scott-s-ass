@@ -272,12 +272,12 @@ html, body {
 }
 
 .avatar-btn {
-  width: 44px;
-  height: 44px;
+  width: 40px;
+  height: 40px;
   border: 2px solid var(--wood-light);
   border-radius: 8px;
   background: var(--wood);
-  font-size: 1.4rem;
+  font-size: 1.2rem;
   cursor: pointer;
   transition: all 0.2s;
   display: flex;
@@ -361,22 +361,32 @@ html, body {
 .player-bar {
   width: 100%;
   display: flex;
-  gap: 6px;
-  margin-bottom: 12px;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 8px;
 }
 
 .player-chip {
-  flex: 1;
+  flex: 1 1 auto;
+  min-width: 0;
   background: var(--wood-mid);
   border: 2px solid var(--wood-light);
-  border-radius: 8px;
-  padding: 8px;
+  border-radius: 6px;
+  padding: 5px 6px;
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  gap: 4px;
-  font-size: 0.8rem;
+  gap: 3px;
+  font-size: 0.7rem;
   transition: border-color 0.3s;
+}
+
+/* When 5 players, wrap to 3+2 layout */
+.player-bar.five-players {
+  gap: 4px;
+}
+
+.player-bar.five-players .player-chip {
+  flex: 1 1 30%;
 }
 
 .player-chip.active-player {
@@ -385,7 +395,7 @@ html, body {
 }
 
 .chip-avatar {
-  font-size: 1.2rem;
+  font-size: 1rem;
 }
 
 .chip-name {
@@ -684,8 +694,8 @@ html, body {
 }
 
 .snap-btn {
-  width: 100px;
-  height: 100px;
+  width: 80px;
+  height: 80px;
   border-radius: 50%;
   background: radial-gradient(circle, var(--red-bright) 0%, var(--red) 100%);
   border: 3px solid var(--gold);

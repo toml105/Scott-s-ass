@@ -57,7 +57,8 @@ class GameState {
       { name: 'Bloke #1', avatar: 'beer' },
       { name: 'Bloke #2', avatar: 'whisky' },
       { name: 'Bloke #3', avatar: 'wine' },
-      { name: 'Bloke #4', avatar: 'cocktail' }
+      { name: 'Bloke #4', avatar: 'cocktail' },
+      { name: 'Bloke #5', avatar: 'shot' }
     ];
     this.players = [];
     for (let i = 0; i < this.playerCount; i++) {
@@ -195,7 +196,8 @@ class GameState {
       beer: '\u{1F37A}',
       whisky: '\u{1F943}',
       wine: '\u{1F377}',
-      cocktail: '\u{1F378}'
+      cocktail: '\u{1F378}',
+      shot: '\u{1F944}'
     };
     return avatarMap[this.players[playerIndex].avatar] || '\u{1F37A}';
   }

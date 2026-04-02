@@ -23,11 +23,15 @@ const UI = {
     this.currentScreen = name;
   },
 
-  // Show/hide 4th player chip in game board
+  // Show/hide extra player chips in game board
   setupPlayerChips(game) {
     const p3chip = document.getElementById('p3-chip');
-    if (p3chip) {
-      p3chip.style.display = game.playerCount >= 4 ? 'flex' : 'none';
+    const p4chip = document.getElementById('p4-chip');
+    const bar = document.querySelector('.player-bar');
+    if (p3chip) p3chip.style.display = game.playerCount >= 4 ? 'flex' : 'none';
+    if (p4chip) p4chip.style.display = game.playerCount >= 5 ? 'flex' : 'none';
+    if (bar) {
+      bar.classList.toggle('five-players', game.playerCount >= 5);
     }
   },
 
@@ -276,12 +280,14 @@ const UI = {
     const container = document.getElementById('end-rankings');
     const pc = game.playerCount;
 
-    const medals = pc === 4
-      ? ['&#128081;', '&#129352;', '&#129353;', '&#128128;']
-      : ['&#128081;', '&#129352;', '&#128128;'];
-    const titles = pc === 4
-      ? ['Pub Legend', 'Solid Effort', 'Barely Standing', 'Shame King']
-      : ['Pub Legend', 'Survivor', 'Shame King'];
+    const allMedals = ['&#128081;', '&#129352;', '&#129353;', '&#127867;', '&#128128;'];
+    const allTitles = ['Pub Legend', 'Solid Effort', 'Hanging In', 'Barely Standing', 'Shame King'];
+    // First place always gets crown, last always gets skull
+    const medals = allMedals.slice(0, pc);
+    const titles = allTitles.slice(0, pc);
+    // Ensure last is always "Shame King"
+    medals[pc - 1] = '&#128128;';
+    titles[pc - 1] = 'Shame King';
 
     container.innerHTML = rankings.map((p, rank) => `
       <div class="end-rank ${rank === 0 ? 'winner' : ''} ${rank === pc - 1 ? 'loser' : ''} slide-up" style="animation-delay:${rank * 0.2}s">

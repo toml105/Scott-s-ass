@@ -1,4 +1,4 @@
-const CACHE_NAME = 'tavern-royale-v3';
+const CACHE_NAME = 'tavern-royale-v4';
 const ASSETS = [
   './',
   './index.html',

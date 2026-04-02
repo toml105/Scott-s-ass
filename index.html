@@ -43,6 +43,7 @@
         <div class="count-toggle">
           <button class="count-btn selected" data-count="3">3</button>
           <button class="count-btn" data-count="4">4</button>
+          <button class="count-btn" data-count="5">5</button>
         </div>
       </div>
       <div class="player-inputs">
@@ -52,6 +53,7 @@
             <button class="avatar-btn" data-avatar="whisky">&#129347;</button>
             <button class="avatar-btn" data-avatar="wine">&#127863;</button>
             <button class="avatar-btn" data-avatar="cocktail">&#127864;</button>
+            <button class="avatar-btn" data-avatar="shot">&#129348;</button>
           </div>
           <input type="text" class="player-name-input" placeholder="Bloke #1" maxlength="12" autocomplete="off">
         </div>
@@ -61,6 +63,7 @@
             <button class="avatar-btn selected" data-avatar="whisky">&#129347;</button>
             <button class="avatar-btn" data-avatar="wine">&#127863;</button>
             <button class="avatar-btn" data-avatar="cocktail">&#127864;</button>
+            <button class="avatar-btn" data-avatar="shot">&#129348;</button>
           </div>
           <input type="text" class="player-name-input" placeholder="Bloke #2" maxlength="12" autocomplete="off">
         </div>
@@ -70,6 +73,7 @@
             <button class="avatar-btn" data-avatar="whisky">&#129347;</button>
             <button class="avatar-btn selected" data-avatar="wine">&#127863;</button>
             <button class="avatar-btn" data-avatar="cocktail">&#127864;</button>
+            <button class="avatar-btn" data-avatar="shot">&#129348;</button>
           </div>
           <input type="text" class="player-name-input" placeholder="Bloke #3" maxlength="12" autocomplete="off">
         </div>
@@ -79,8 +83,19 @@
             <button class="avatar-btn" data-avatar="whisky">&#129347;</button>
             <button class="avatar-btn" data-avatar="wine">&#127863;</button>
             <button class="avatar-btn selected" data-avatar="cocktail">&#127864;</button>
+            <button class="avatar-btn" data-avatar="shot">&#129348;</button>
           </div>
           <input type="text" class="player-name-input" placeholder="Bloke #4" maxlength="12" autocomplete="off">
+        </div>
+        <div class="player-input-group" data-player="4" style="display:none">
+          <div class="avatar-selector">
+            <button class="avatar-btn" data-avatar="beer">&#127866;</button>
+            <button class="avatar-btn" data-avatar="whisky">&#129347;</button>
+            <button class="avatar-btn" data-avatar="wine">&#127863;</button>
+            <button class="avatar-btn" data-avatar="cocktail">&#127864;</button>
+            <button class="avatar-btn selected" data-avatar="shot">&#129348;</button>
+          </div>
+          <input type="text" class="player-name-input" placeholder="Bloke #5" maxlength="12" autocomplete="off">
         </div>
       </div>
       <button class="btn btn-gold btn-large" id="btn-begin">Let's Go!</button>
@@ -122,6 +137,12 @@
         <span class="chip-name" id="p3-name"></span>
         <span class="chip-fingers" id="p3-fingers">0</span>
         <span class="chip-immunity" id="p3-immunity" title="Immunity Token">&#128737;</span>
+      </div>
+      <div class="player-chip" data-player="4" id="p4-chip" style="display:none">
+        <span class="chip-avatar" id="p4-avatar"></span>
+        <span class="chip-name" id="p4-name"></span>
+        <span class="chip-fingers" id="p4-fingers">0</span>
+        <span class="chip-immunity" id="p4-immunity" title="Immunity Token">&#128737;</span>
       </div>
     </div>
 
