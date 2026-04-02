@@ -76,6 +76,7 @@
       return;
     }
 
+    UI.showScreen('game');
     UI.updateRoundInfo(game);
     UI.updatePlayerBar(game);
     UI.updateActiveRules(game);
@@ -84,16 +85,19 @@
     const area = document.getElementById('round-area');
     area.innerHTML = '';
 
-    // Check for skull card this round
-    if (game.currentRound === game.skullCardRound && game.skullKing < 0) {
-      const skullPlayer = Math.floor(Math.random() * 3);
-      game.skullKing = skullPlayer;
-      UI.showSkullCardEvent(game, skullPlayer, () => {
+    // Show round intro first
+    UI.showRoundIntro(game, () => {
+      // After player taps "Deal Me In", check skull card then launch
+      if (game.currentRound === game.skullCardRound && game.skullKing < 0) {
+        const skullPlayer = Math.floor(Math.random() * 3);
+        game.skullKing = skullPlayer;
+        UI.showSkullCardEvent(game, skullPlayer, () => {
+          launchRound(roundType, area);
+        });
+      } else {
         launchRound(roundType, area);
-      });
-    } else {
-      launchRound(roundType, area);
-    }
+      }
+    });
   }
 
   function launchRound(roundType, area) {

@@ -72,19 +72,56 @@ const UI = {
     }
   },
 
+  // Show round intro before each round
+  showRoundIntro(game, onReady) {
+    const intro = document.getElementById('round-intro');
+    const info = game.currentRoundInfo;
+    const header = document.getElementById('round-header');
+    header.style.display = 'none';
+    document.getElementById('round-area').innerHTML = '';
+
+    document.getElementById('round-intro-icon').innerHTML = info.icon;
+    document.getElementById('round-intro-name').textContent = `Round ${game.currentRound + 1}: ${info.name}`;
+    document.getElementById('round-intro-desc').textContent = info.desc;
+
+    const mult = game.multiplierLabel;
+    const multEl = document.getElementById('round-intro-multiplier');
+    if (mult !== 'x1') {
+      multEl.textContent = `Multiplier: ${mult} - penalties are scaled!`;
+      multEl.style.display = 'block';
+    } else {
+      multEl.style.display = 'none';
+    }
+
+    intro.style.display = 'flex';
+
+    document.getElementById('btn-start-round').onclick = () => {
+      intro.style.display = 'none';
+      header.style.display = 'block';
+      onReady();
+    };
+  },
+
   // Show drink penalty screen
+  // NOTE: penalties are RAW (unscaled). We scale for display and apply scaled values.
   showDrinkScreen(game, penalties, onCheers) {
     const container = document.getElementById('drink-assignments');
     container.innerHTML = '';
 
+    // Pre-compute scaled values for each player
+    const scaledPenalties = {};
     let hasPenalties = false;
 
     for (let i = 0; i < 3; i++) {
       const raw = penalties[i] || 0;
       if (raw <= 0) continue;
-
       hasPenalties = true;
-      const scaled = Math.ceil(raw * game.multiplier);
+      scaledPenalties[i] = Math.ceil(raw * game.multiplier);
+    }
+
+    for (const iStr of Object.keys(scaledPenalties)) {
+      const i = parseInt(iStr);
+      const scaled = scaledPenalties[i];
 
       const card = document.createElement('div');
       card.className = 'drink-card slide-up';
@@ -95,12 +132,12 @@ const UI = {
           <span class="drink-card-name">${game.players[i].name}</span>
         </div>
         <div class="drink-card-amount">
-          <div class="drink-card-fingers">${scaled}</div>
+          <div class="drink-card-fingers" data-player="${i}">${scaled}</div>
           <div class="drink-card-label">fingers</div>
         </div>
         ${game.players[i].immunity > 0 ? `
           <button class="immunity-use-btn" data-player="${i}" data-amount="${scaled}">
-            &#128737; Use Immunity (halve to ${Math.ceil(scaled / 2)})
+            &#128737; Halve to ${Math.ceil(scaled / 2)}
           </button>
         ` : ''}
       `;
@@ -118,10 +155,10 @@ const UI = {
         const amount = parseInt(btn.dataset.amount);
         if (game.useImmunity(pi)) {
           const halved = Math.ceil(amount / 2);
+          scaledPenalties[pi] = halved;
           const fingersEl = btn.closest('.drink-card').querySelector('.drink-card-fingers');
           fingersEl.textContent = halved;
           fingersEl.classList.add('count-pop');
-          penalties[pi] = Math.ceil(halved / game.multiplier); // Store unscaled
           btn.remove();
           UI.updatePlayerBar(game);
         }
@@ -135,10 +172,9 @@ const UI = {
       document.getElementById('btn-skull-king').onclick = () => {
         game.skullKingUsed = true;
         skullKingDiv.style.display = 'none';
-        // Double a random other player's penalty
-        const targets = Object.keys(penalties).map(Number).filter(i => i !== game.skullKing && penalties[i] > 0);
+        const targets = Object.keys(scaledPenalties).map(Number).filter(i => i !== game.skullKing && scaledPenalties[i] > 0);
         if (targets.length > 0) {
-          UI.showSkullKingPicker(game, penalties, targets);
+          UI.showSkullKingPicker(game, scaledPenalties, targets);
         }
       };
     } else {
@@ -147,19 +183,13 @@ const UI = {
 
     // Title
     const title = document.getElementById('drink-title');
-    if (hasPenalties) {
-      title.textContent = 'Time to Drink!';
-    } else {
-      title.textContent = 'Safe Round!';
-    }
+    title.textContent = hasPenalties ? 'Time to Drink!' : 'Safe Round!';
 
-    // Cheers button
+    // Cheers button - apply already-scaled values directly (no double-multiplier)
     document.getElementById('btn-cheers').onclick = () => {
-      // Apply the penalties
-      for (let i = 0; i < 3; i++) {
-        if (penalties[i] > 0) {
-          game.applyFingers(i, penalties[i]);
-        }
+      for (const iStr of Object.keys(scaledPenalties)) {
+        const i = parseInt(iStr);
+        game.applyFingersRaw(i, scaledPenalties[i]);
       }
       UI.updatePlayerBar(game);
       onCheers();
@@ -168,7 +198,8 @@ const UI = {
     this.showScreen('drink');
   },
 
-  showSkullKingPicker(game, penalties, targets) {
+  // scaledPenalties are already multiplied values
+  showSkullKingPicker(game, scaledPenalties, targets) {
     const container = document.getElementById('drink-assignments');
     const pickerDiv = document.createElement('div');
     pickerDiv.className = 'slide-up mt-16';
@@ -177,7 +208,7 @@ const UI = {
       <div class="player-select-row mt-8">
         ${targets.map(i => `
           <button class="player-select-btn" data-player="${i}">
-            ${game.getAvatarEmoji(i)} ${game.players[i].name} (${Math.ceil(penalties[i] * game.multiplier)} -> ${Math.ceil(penalties[i] * game.multiplier * 2)})
+            ${game.getAvatarEmoji(i)} ${game.players[i].name} (${scaledPenalties[i]} -> ${scaledPenalties[i] * 2})
           </button>
         `).join('')}
       </div>
@@ -187,18 +218,14 @@ const UI = {
     pickerDiv.querySelectorAll('.player-select-btn').forEach(btn => {
       btn.onclick = () => {
         const target = parseInt(btn.dataset.player);
-        penalties[target] = penalties[target] * 2;
-        // Refresh the display
-        const fingersEls = container.querySelectorAll('.drink-card');
-        fingersEls.forEach(card => {
-          const nameEl = card.querySelector('.drink-card-name');
-          if (nameEl && nameEl.textContent === game.players[target].name) {
-            const fEl = card.querySelector('.drink-card-fingers');
-            fEl.textContent = Math.ceil(penalties[target] * game.multiplier);
-            fEl.classList.add('count-pop');
-            card.classList.add('shake');
-          }
-        });
+        scaledPenalties[target] = scaledPenalties[target] * 2;
+        // Update the displayed fingers
+        const fEl = container.querySelector(`.drink-card-fingers[data-player="${target}"]`);
+        if (fEl) {
+          fEl.textContent = scaledPenalties[target];
+          fEl.classList.add('count-pop');
+          fEl.closest('.drink-card').classList.add('shake');
+        }
         pickerDiv.remove();
       };
     });

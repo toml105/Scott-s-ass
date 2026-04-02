@@ -19,6 +19,7 @@ const Rounds = {
         currentPlayer: 0,
         lastClaim: null,
         lastClaimPlayer: -1,
+        claimCount: 0,
         phase: 'claim' // claim, challenge, reveal
       };
 
@@ -35,39 +36,46 @@ const Rounds = {
         const playerCard = s.cards[cp];
         area.innerHTML = `
           <div class="turn-indicator">${g.getAvatarEmoji(cp)} ${g.players[cp].name}'s Turn</div>
-          <p class="text-dim text-center mt-8">Look at your card secretly, then make a claim!</p>
-          <div class="card-row">
+          <p class="text-dim text-center mt-8">Pass the phone to ${g.players[cp].name}!</p>
+          <p class="text-dim text-center">Tap the card to peek (hides after 3s), then claim a value - truth or bluff!</p>
+          <div class="card-row mt-16">
             ${createCardHTML(playerCard, { faceDown: true, large: true, animClass: 'deal-in' })}
           </div>
-          <button class="btn btn-gold mt-16" id="peek-card">Peek at Card (hide from others!)</button>
+          <p class="text-gold text-center mt-8" id="peek-hint">&#9757; Tap the card to peek</p>
           <div class="claim-area mt-16" id="claim-area" style="display:none">
-            <p class="text-gold mb-16">Claim your card value (truth or lie!):</p>
+            <p class="text-gold mb-16">Now claim a value (truth or lie!):</p>
             <div class="claim-options" id="claim-options"></div>
             ${s.lastClaim ? `<p class="text-dim mt-8">Last claim: ${s.lastClaim} by ${g.players[s.lastClaimPlayer].name}</p>` : ''}
           </div>
         `;
 
-        document.getElementById('peek-card').onclick = () => {
-          const card = area.querySelector('.card');
-          card.classList.add('flipped');
+        const cardEl = area.querySelector('.card');
+        cardEl.onclick = () => {
+          cardEl.classList.add('flipped');
+          const hint = document.getElementById('peek-hint');
+          if (hint) hint.textContent = 'Card hides in 3s...';
           setTimeout(() => {
             document.getElementById('claim-area').style.display = 'block';
             self.renderClaimOptions();
           }, 300);
-          // Auto-hide card after 3 seconds
-          setTimeout(() => card.classList.remove('flipped'), 3000);
+          setTimeout(() => {
+            cardEl.classList.remove('flipped');
+            if (hint) hint.textContent = 'Card hidden! Now make your claim below.';
+          }, 3000);
         };
 
       } else if (s.phase === 'challenge') {
         const nextPlayer = (s.lastClaimPlayer + 1) % 3;
+        const isFinalChallenge = s.claimCount >= 3;
         area.innerHTML = `
           <div class="turn-indicator">${g.getAvatarEmoji(nextPlayer)} ${g.players[nextPlayer].name}'s Turn</div>
           <p class="text-center mt-8">
             ${g.players[s.lastClaimPlayer].name} claims: <strong class="text-gold">${s.lastClaim}</strong>
           </p>
+          ${isFinalChallenge ? '<p class="text-red text-center mt-8">Final call! You MUST call Bullshit or accept.</p>' : ''}
           <div class="mt-16" style="display:flex;flex-direction:column;gap:12px;align-items:center">
             <button class="btn bs-btn" id="btn-bs">BULLSHIT!</button>
-            <button class="btn btn-gold" id="btn-accept">I Believe It</button>
+            ${isFinalChallenge ? '<button class="btn btn-gold" id="btn-accept">I Believe It (end round)</button>' : '<button class="btn btn-gold" id="btn-accept">I Believe It (my turn to claim)</button>'}
           </div>
         `;
 
@@ -75,6 +83,11 @@ const Rounds = {
           self.resolveChallenge(nextPlayer, true);
         };
         document.getElementById('btn-accept').onclick = () => {
+          if (isFinalChallenge) {
+            // Accepted on final round - no penalties, round ends cleanly
+            self.onComplete({});
+            return;
+          }
           // Move to next player's claim
           s.currentPlayer = nextPlayer;
           s.phase = 'claim';
@@ -100,6 +113,7 @@ const Rounds = {
           const s = self.state;
           s.lastClaim = btn.dataset.value;
           s.lastClaimPlayer = s.currentPlayer;
+          s.claimCount++;
           s.phase = 'challenge';
           self.render(document.getElementById('round-area'));
         };
@@ -186,8 +200,8 @@ const Rounds = {
         </div>
         <div class="turn-indicator mt-16">${g.getAvatarEmoji(cp)} ${g.players[cp].name}'s Turn</div>
         <div class="tower-actions mt-16">
-          <button class="btn btn-red" id="btn-stack">Stack!</button>
-          <button class="btn btn-gold" id="btn-bail">Bail</button>
+          <button class="btn btn-red btn-large" id="btn-stack">&#127183; Stack (draw card)</button>
+          <button class="btn btn-gold btn-large" id="btn-bail">&#128694; Bail (safe)</button>
         </div>
       `;
 
@@ -447,13 +461,16 @@ const Rounds = {
       };
 
       area.innerHTML = `
-        <p class="text-center text-dim">Cards will flip. When two in a row match - SNAP!</p>
-        <p class="text-center text-dim">Each player taps their SNAP button when ready.</p>
-        <div class="snap-card-area mt-16" id="snap-cards"></div>
-        <div class="mt-16" style="display:flex;flex-direction:column;gap:10px;align-items:center" id="snap-buttons">
+        <p class="text-center text-dim">Cards will flip one by one. When two in a row have the <strong class="text-gold">same value</strong> - hit your SNAP button!</p>
+        <div class="snap-card-area mt-16" id="snap-cards">
+          <p class="text-dim">Cards will appear here...</p>
+        </div>
+        <div class="snap-buttons-row mt-16" id="snap-buttons">
           ${[0,1,2].map(i => `
             <button class="snap-btn" data-player="${i}" id="snap-btn-${i}">
-              ${game.getAvatarEmoji(i)}<br>SNAP!
+              <span class="snap-emoji">${game.getAvatarEmoji(i)}</span>
+              <span>SNAP!</span>
+              <span style="font-size:0.6rem;text-transform:none">${game.players[i].name}</span>
             </button>
           `).join('')}
         </div>
@@ -595,7 +612,7 @@ const Rounds = {
         currentCard: game.deck.draw(),
         chain: 1,
         currentPlayer: Math.floor(Math.random() * 3),
-        correctInRow: 0
+        totalCorrect: 0
       };
 
       self.render();
@@ -613,16 +630,16 @@ const Rounds = {
           ${Array.from({length: s.chain}, (_, i) => `<span class="chain-dot"></span>`).join('')}
           <span class="text-dim">Chain: ${s.chain}</span>
         </div>
-        <p class="text-dim text-center">Wrong = drink ${s.chain} finger${s.chain > 1 ? 's' : ''}!</p>
+        <p class="text-dim text-center">Wrong = drink ${s.chain} finger${s.chain > 1 ? 's' : ''}! (${s.totalCorrect}/3 correct)</p>
         <div class="card-row mt-16">
           ${createCardHTML(s.currentCard, { large: true })}
         </div>
         <p class="text-center mt-8">Will the next card be...</p>
         <div class="gauntlet-actions mt-16">
-          <button class="btn btn-gold" id="btn-higher">Higher</button>
-          <button class="btn btn-red" id="btn-lower">Lower</button>
+          <button class="btn btn-gold btn-large" id="btn-higher">&#9650; Higher</button>
+          <button class="btn btn-red btn-large" id="btn-lower">&#9660; Lower</button>
         </div>
-        ${s.correctInRow >= 2 ? '<p class="text-gold text-center mt-8 glow">One more for safety!</p>' : ''}
+        ${s.totalCorrect >= 2 ? '<p class="text-gold text-center mt-8 glow">One more for safety!</p>' : ''}
       `;
 
       document.getElementById('btn-higher').onclick = () => self.guess('higher');
@@ -641,10 +658,10 @@ const Rounds = {
       s.currentCard = nextCard;
 
       if (correct) {
-        s.correctInRow++;
+        s.totalCorrect++;
         s.chain++;
 
-        if (s.correctInRow >= 3) {
+        if (s.totalCorrect >= 3) {
           // Survived! Safe and assign 3 fingers
           g.winRound(s.currentPlayer);
           const winner = s.currentPlayer;
@@ -678,7 +695,6 @@ const Rounds = {
 
         // Correct but chain continues - pass to next player
         s.currentPlayer = (s.currentPlayer + 1) % 3;
-        s.correctInRow = 0; // Reset per-player counter
 
         self.area.innerHTML = `
           <h3 class="text-gold text-center">Correct!</h3>
@@ -740,7 +756,7 @@ const Rounds = {
 
       self.area.innerHTML = `
         <div class="turn-indicator">${g.getAvatarEmoji(cp)} ${g.players[cp].name} - Pick secretly!</div>
-        <p class="text-dim text-center mt-8">Others look away! Pick a number 1-5.</p>
+        <p class="text-dim text-center mt-8">&#128064; Others look away! Pick a number 1-5, then pass the phone.</p>
         <div class="gambit-numbers mt-16">
           ${[1,2,3,4,5].map(n => `
             <button class="gambit-num" data-num="${n}">${n}</button>
