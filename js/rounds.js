@@ -5,155 +5,246 @@
 const Rounds = {
 
   // ==========================================
-  // 1. LIAR'S DRAW - Bluffing round
+  // 1. PICTURE GUESS - Guess the emoji picture
   // ==========================================
-  'liars-draw': {
+  'picture-guess': {
     state: {},
 
+    // Big pool of emoji pictures with category hints
+    PICTURES: [
+      { emoji: '&#128021;', answer: 'dog', hint: 'Animal' },
+      { emoji: '&#128008;', answer: 'cat', hint: 'Animal' },
+      { emoji: '&#129409;', answer: 'lion', hint: 'Animal' },
+      { emoji: '&#128024;', answer: 'elephant', hint: 'Animal' },
+      { emoji: '&#128012;', answer: 'snail', hint: 'Animal' },
+      { emoji: '&#129412;', answer: 'gorilla', hint: 'Animal' },
+      { emoji: '&#128038;', answer: 'bird', hint: 'Animal' },
+      { emoji: '&#129416;', answer: 'shark', hint: 'Animal' },
+      { emoji: '&#128034;', answer: 'turtle', hint: 'Animal' },
+      { emoji: '&#128013;', answer: 'snake', hint: 'Animal' },
+      { emoji: '&#127829;', answer: 'pizza', hint: 'Food' },
+      { emoji: '&#127828;', answer: 'burger', hint: 'Food' },
+      { emoji: '&#127846;', answer: 'ice cream', hint: 'Food' },
+      { emoji: '&#127838;', answer: 'bread', hint: 'Food' },
+      { emoji: '&#127847;', answer: 'doughnut', hint: 'Food' },
+      { emoji: '&#129372;', answer: 'avocado', hint: 'Food' },
+      { emoji: '&#127814;', answer: 'chilli', hint: 'Food' },
+      { emoji: '&#9917;', answer: 'football', hint: 'Sport' },
+      { emoji: '&#127936;', answer: 'basketball', hint: 'Sport' },
+      { emoji: '&#127955;', answer: 'cricket', hint: 'Sport' },
+      { emoji: '&#127949;', answer: 'tennis', hint: 'Sport' },
+      { emoji: '&#9971;', answer: 'golf', hint: 'Sport' },
+      { emoji: '&#128640;', answer: 'rocket', hint: 'Transport' },
+      { emoji: '&#9992;', answer: 'plane', hint: 'Transport' },
+      { emoji: '&#128658;', answer: 'bus', hint: 'Transport' },
+      { emoji: '&#128674;', answer: 'bicycle', hint: 'Transport' },
+      { emoji: '&#128661;', answer: 'ambulance', hint: 'Transport' },
+      { emoji: '&#127970;', answer: 'hospital', hint: 'Building' },
+      { emoji: '&#127979;', answer: 'school', hint: 'Building' },
+      { emoji: '&#9962;', answer: 'church', hint: 'Building' },
+      { emoji: '&#127960;', answer: 'house', hint: 'Building' },
+      { emoji: '&#127928;', answer: 'guitar', hint: 'Music' },
+      { emoji: '&#127927;', answer: 'violin', hint: 'Music' },
+      { emoji: '&#127929;', answer: 'piano', hint: 'Music' },
+      { emoji: '&#129345;', answer: 'drum', hint: 'Music' },
+      { emoji: '&#128176;', answer: 'money', hint: 'Object' },
+      { emoji: '&#128142;', answer: 'diamond', hint: 'Object' },
+      { emoji: '&#128274;', answer: 'lock', hint: 'Object' },
+      { emoji: '&#128161;', answer: 'lightbulb', hint: 'Object' },
+      { emoji: '&#9749;', answer: 'coffee', hint: 'Drink' },
+      { emoji: '&#127870;', answer: 'wine', hint: 'Drink' },
+    ],
+
     start(game, area, onComplete) {
-      const self = Rounds['liars-draw'];
+      const self = Rounds['picture-guess'];
       self.game = game;
       self.onComplete = onComplete;
+      self.area = area;
+
+      // Pick a random picture
+      const pic = self.PICTURES[Math.floor(Math.random() * self.PICTURES.length)];
+      // Pick a random "holder" who sees the picture
+      const holder = Math.floor(Math.random() * game.playerCount);
+
       self.state = {
-        cards: game.allPlayerIndices.map(() => game.deck.draw()),
-        currentPlayer: 0,
-        lastClaim: null,
-        lastClaimPlayer: -1,
-        claimCount: 0,
-        phase: 'claim' // claim, challenge, reveal
+        picture: pic,
+        holder: holder,
+        questionsAsked: 0,
+        phase: 'show-holder' // show-holder, questioning, guessing, result
       };
 
-      self.render(area);
+      self.showHolder();
     },
 
-    render(area) {
-      const self = Rounds['liars-draw'];
+    showHolder() {
+      const self = Rounds['picture-guess'];
       const s = self.state;
       const g = self.game;
-      const cp = s.currentPlayer;
 
-      if (s.phase === 'claim') {
-        const playerCard = s.cards[cp];
-        area.innerHTML = `
-          <div class="turn-indicator">${g.getAvatarEmoji(cp)} ${g.players[cp].name}'s Turn</div>
-          <p class="text-dim text-center mt-8">Pass the phone to ${g.players[cp].name}!</p>
-          <p class="text-dim text-center">Tap the card to peek (hides after 3s), then claim a value - truth or bluff!</p>
-          <div class="card-row mt-16">
-            ${createCardHTML(playerCard, { faceDown: true, large: true, animClass: 'deal-in' })}
-          </div>
-          <p class="text-gold text-center mt-8" id="peek-hint">&#9757; Tap the card to peek</p>
-          <div class="claim-area mt-16" id="claim-area" style="display:none">
-            <p class="text-gold mb-16">Now claim a value (truth or lie!):</p>
-            <div class="claim-options" id="claim-options"></div>
-            ${s.lastClaim ? `<p class="text-dim mt-8">Last claim: ${s.lastClaim} by ${g.players[s.lastClaimPlayer].name}</p>` : ''}
-          </div>
-        `;
+      self.area.innerHTML = `
+        <div class="turn-indicator">${g.getAvatarEmoji(s.holder)} ${g.players[s.holder].name} is the Picture Holder!</div>
+        <p class="text-dim text-center mt-8">Pass the phone to ${g.players[s.holder].name} ONLY.</p>
+        <p class="text-dim text-center">Everyone else look away!</p>
+        <button class="btn btn-gold btn-large mt-16" id="btn-show-pic">Show Me the Picture</button>
+      `;
 
-        const cardEl = area.querySelector('.card');
-        cardEl.onclick = () => {
-          cardEl.classList.add('flipped');
-          const hint = document.getElementById('peek-hint');
-          if (hint) hint.textContent = 'Card hides in 3s...';
-          setTimeout(() => {
-            document.getElementById('claim-area').style.display = 'block';
-            self.renderClaimOptions();
-          }, 300);
-          setTimeout(() => {
-            cardEl.classList.remove('flipped');
-            if (hint) hint.textContent = 'Card hidden! Now make your claim below.';
-          }, 3000);
-        };
-
-      } else if (s.phase === 'challenge') {
-        const nextPlayer = (s.lastClaimPlayer + 1) % g.playerCount;
-        const isFinalChallenge = s.claimCount >= g.playerCount;
-        area.innerHTML = `
-          <div class="turn-indicator">${g.getAvatarEmoji(nextPlayer)} ${g.players[nextPlayer].name}'s Turn</div>
-          <p class="text-center mt-8">
-            ${g.players[s.lastClaimPlayer].name} claims: <strong class="text-gold">${s.lastClaim}</strong>
-          </p>
-          ${isFinalChallenge ? '<p class="text-red text-center mt-8">Final call! You MUST call Bullshit or accept.</p>' : ''}
-          <div class="mt-16" style="display:flex;flex-direction:column;gap:12px;align-items:center">
-            <button class="btn bs-btn" id="btn-bs">BULLSHIT!</button>
-            ${isFinalChallenge ? '<button class="btn btn-gold" id="btn-accept">I Believe It (end round)</button>' : '<button class="btn btn-gold" id="btn-accept">I Believe It (my turn to claim)</button>'}
-          </div>
-        `;
-
-        document.getElementById('btn-bs').onclick = () => {
-          self.resolveChallenge(nextPlayer, true);
-        };
-        document.getElementById('btn-accept').onclick = () => {
-          if (isFinalChallenge) {
-            // Accepted on final round - no penalties, round ends cleanly
-            self.onComplete({});
-            return;
-          }
-          // Move to next player's claim
-          s.currentPlayer = nextPlayer;
-          s.phase = 'claim';
-          self.render(area);
-        };
-
-      } else if (s.phase === 'reveal') {
-        // Handled by resolveChallenge
-      }
+      document.getElementById('btn-show-pic').onclick = () => {
+        self.showPicture();
+      };
     },
 
-    renderClaimOptions() {
-      const self = Rounds['liars-draw'];
-      const container = document.getElementById('claim-options');
-      if (!container) return;
-      const values = ['2','3','4','5','6','7','8','9','10','J','Q','K','A'];
-      container.innerHTML = values.map(v =>
-        `<button class="claim-btn" data-value="${v}">${v}</button>`
-      ).join('');
+    showPicture() {
+      const self = Rounds['picture-guess'];
+      const s = self.state;
+      const g = self.game;
 
-      container.querySelectorAll('.claim-btn').forEach(btn => {
+      self.area.innerHTML = `
+        <div class="turn-indicator">${g.getAvatarEmoji(s.holder)} ${g.players[s.holder].name} - memorise this!</div>
+        <div class="picture-card mt-16 pop-in">${s.picture.emoji}</div>
+        <p class="text-gold text-center mt-16" style="font-size:1.2rem">It's: <strong>${s.picture.answer}</strong></p>
+        <p class="text-dim text-center mt-8">Category: ${s.picture.hint}</p>
+        <p class="text-dim text-center mt-8">Others will ask you YES or NO questions to guess it.</p>
+        <p class="text-dim text-center">You can only answer YES or NO!</p>
+        <button class="btn btn-gold btn-large mt-16" id="btn-start-questions">Got It - Start Questions!</button>
+      `;
+
+      document.getElementById('btn-start-questions').onclick = () => {
+        s.phase = 'questioning';
+        self.showQuestioning();
+      };
+    },
+
+    showQuestioning() {
+      const self = Rounds['picture-guess'];
+      const s = self.state;
+      const g = self.game;
+
+      const sipsPenalty = Math.min(s.questionsAsked, 5);
+      const nextSips = Math.min(s.questionsAsked + 1, 5);
+
+      self.area.innerHTML = `
+        <div class="turn-indicator">${g.getAvatarEmoji(s.holder)} ${g.players[s.holder].name} is holding the picture</div>
+        <div class="picture-card hidden-picture mt-8">&#10068;</div>
+        <p class="text-dim text-center mt-8">Category: <strong class="text-gold">${s.picture.hint}</strong></p>
+        <div class="question-counter mt-8">
+          Questions asked: <strong>${s.questionsAsked}</strong>
+          <div class="sip-warning">Guessing now = ${sipsPenalty} finger${sipsPenalty !== 1 ? 's' : ''} if wrong | Next question = ${nextSips} if wrong</div>
+        </div>
+        <div class="mt-16" style="display:flex;flex-direction:column;gap:10px;align-items:center;width:100%">
+          <button class="btn btn-gold btn-large w-full" id="btn-ask-question" style="max-width:300px">Ask a Question (+1)</button>
+          <button class="btn btn-red btn-large w-full" id="btn-guess-now" style="max-width:300px">We Want to Guess!</button>
+        </div>
+      `;
+
+      document.getElementById('btn-ask-question').onclick = () => {
+        s.questionsAsked++;
+        self.showQuestioning();
+      };
+
+      document.getElementById('btn-guess-now').onclick = () => {
+        s.phase = 'guessing';
+        self.showGuessing();
+      };
+    },
+
+    showGuessing() {
+      const self = Rounds['picture-guess'];
+      const s = self.state;
+      const g = self.game;
+      const others = g.allPlayerIndices.filter(i => i !== s.holder);
+
+      self.area.innerHTML = `
+        <div class="turn-indicator">Time to Guess!</div>
+        <div class="picture-card hidden-picture mt-8">&#10068;</div>
+        <p class="text-center mt-8">After <strong class="text-gold">${s.questionsAsked}</strong> question${s.questionsAsked !== 1 ? 's' : ''}, who wants to guess?</p>
+        <p class="text-dim text-center">Wrong guess = <strong class="text-red">${Math.min(s.questionsAsked, 5)} fingers</strong></p>
+        <div class="player-select-row mt-16">
+          ${others.map(i => `
+            <button class="player-select-btn" data-player="${i}">
+              ${g.getAvatarEmoji(i)} ${g.players[i].name}
+            </button>
+          `).join('')}
+        </div>
+      `;
+
+      self.area.querySelectorAll('.player-select-btn').forEach(btn => {
         btn.onclick = () => {
-          const s = self.state;
-          s.lastClaim = btn.dataset.value;
-          s.lastClaimPlayer = s.currentPlayer;
-          s.claimCount++;
-          s.phase = 'challenge';
-          self.render(document.getElementById('round-area'));
+          const guesser = parseInt(btn.dataset.player);
+          self.showGuessInput(guesser);
         };
       });
     },
 
-    resolveChallenge(challengerIndex, called) {
-      const self = Rounds['liars-draw'];
+    showGuessInput(guesserIndex) {
+      const self = Rounds['picture-guess'];
       const s = self.state;
       const g = self.game;
-      const claimerCard = s.cards[s.lastClaimPlayer];
-      const wasLie = claimerCard.value !== s.lastClaim;
 
-      const area = document.getElementById('round-area');
-      area.innerHTML = `
-        <div class="slide-up">
-          <h3 class="text-gold text-center">${called ? 'BULLSHIT CALLED!' : 'Challenge!'}</h3>
-          <div class="card-row mt-16">
-            ${createCardHTML(claimerCard, { large: true, animClass: 'slam-in' })}
-          </div>
-          <p class="text-center mt-16">${g.players[s.lastClaimPlayer].name} claimed <strong>${s.lastClaim}</strong></p>
-          <p class="text-center">The card was <strong class="${wasLie ? 'text-red' : 'text-gold'}">${claimerCard.value}</strong></p>
+      self.area.innerHTML = `
+        <div class="turn-indicator">${g.getAvatarEmoji(guesserIndex)} ${g.players[guesserIndex].name} is guessing!</div>
+        <div class="picture-card hidden-picture mt-8">&#10068;</div>
+        <p class="text-dim text-center mt-8">Category: <strong class="text-gold">${s.picture.hint}</strong></p>
+        <input type="text" class="guess-input mt-16" id="guess-input" placeholder="Type your guess..." autocomplete="off">
+        <div class="mt-16" style="display:flex;gap:10px">
+          <button class="btn btn-gold" id="btn-submit-guess">Submit Guess</button>
+          <button class="btn btn-dark" id="btn-back-questions">Back to Questions</button>
         </div>
       `;
 
+      document.getElementById('btn-submit-guess').onclick = () => {
+        const guess = document.getElementById('guess-input').value.trim().toLowerCase();
+        if (!guess) return;
+        self.resolveGuess(guesserIndex, guess);
+      };
+
+      document.getElementById('guess-input').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          const guess = document.getElementById('guess-input').value.trim().toLowerCase();
+          if (guess) self.resolveGuess(guesserIndex, guess);
+        }
+      });
+
+      document.getElementById('btn-back-questions').onclick = () => {
+        s.phase = 'questioning';
+        self.showQuestioning();
+      };
+    },
+
+    resolveGuess(guesserIndex, guess) {
+      const self = Rounds['picture-guess'];
+      const s = self.state;
+      const g = self.game;
+      const answer = s.picture.answer.toLowerCase();
+      const correct = guess === answer || answer.includes(guess) || guess.includes(answer);
       const penalties = {};
-      if (wasLie) {
-        // Caller was right - liar drinks
-        penalties[s.lastClaimPlayer] = 3;
-        // Caller wins
-        g.winRound(challengerIndex);
+
+      if (correct) {
+        g.winRound(guesserIndex);
+        // Holder drinks based on how few questions were asked (they made it too easy)
+        const holderPenalty = Math.max(1, 4 - Math.floor(s.questionsAsked / 2));
+        penalties[s.holder] = holderPenalty;
+
+        self.area.innerHTML = `
+          <h3 class="text-gold text-center sparkle">CORRECT!</h3>
+          <div class="picture-card mt-16 pop-in">${s.picture.emoji}</div>
+          <p class="text-center mt-8">It was <strong class="text-gold">${s.picture.answer}</strong>!</p>
+          <p class="text-center mt-8">${g.players[guesserIndex].name} got it in ${s.questionsAsked} question${s.questionsAsked !== 1 ? 's' : ''}!</p>
+          <p class="text-center mt-8">${g.players[s.holder].name} drinks ${holderPenalty} finger${holderPenalty !== 1 ? 's' : ''} for making it too easy!</p>
+        `;
       } else {
-        // Caller was wrong - caller drinks
-        penalties[challengerIndex] = 3;
-        g.winRound(s.lastClaimPlayer);
+        // Wrong! Guesser drinks based on questions asked
+        const penalty = Math.min(Math.max(s.questionsAsked, 1), 5);
+        penalties[guesserIndex] = penalty;
+
+        self.area.innerHTML = `
+          <h3 class="text-red text-center shake">WRONG!</h3>
+          <div class="picture-card mt-16 pop-in">${s.picture.emoji}</div>
+          <p class="text-center mt-8">It was <strong class="text-gold">${s.picture.answer}</strong>, not "${guess}"!</p>
+          <p class="text-center mt-8">${g.players[guesserIndex].name} drinks ${penalty} finger${penalty !== 1 ? 's' : ''}!</p>
+        `;
       }
 
-      setTimeout(() => {
-        self.onComplete(penalties);
-      }, 2000);
+      setTimeout(() => self.onComplete(penalties), 2500);
     }
   },
 
@@ -456,37 +547,64 @@ const Rounds = {
       self.state = {
         cards: [],
         snapActive: false,
-        snapped: [],
         matchFound: false,
         intervalId: null
       };
 
+      // Show instruction screen first
       area.innerHTML = `
-        <p class="text-center text-dim">Cards will flip one by one. When two in a row have the <strong class="text-gold">same value</strong> - hit your SNAP button!</p>
-        <div class="snap-card-area mt-16" id="snap-cards">
-          <p class="text-dim">Cards will appear here...</p>
-        </div>
-        <div class="snap-buttons-row mt-16" id="snap-buttons">
-          ${game.allPlayerIndices.map(i => `
-            <button class="snap-btn" data-player="${i}" id="snap-btn-${i}">
-              <span class="snap-emoji">${game.getAvatarEmoji(i)}</span>
-              <span>SNAP!</span>
-              <span style="font-size:0.6rem;text-transform:none">${game.players[i].name}</span>
-            </button>
-          `).join('')}
-        </div>
-        <button class="btn btn-gold mt-16" id="btn-start-snap">Start Dealing!</button>
+        <p class="text-center" style="font-size:1.1rem">Cards flip one at a time. When two in a row have the <strong class="text-gold">same value</strong>...</p>
+        <p class="text-center text-gold mt-8" style="font-size:1.3rem">SMASH YOUR COLOUR ZONE!</p>
+        <p class="text-dim text-center mt-8">Each player gets a big coloured zone. Fastest snap wins!</p>
+        <p class="text-dim text-center">False snap = 3 finger penalty!</p>
+        <button class="btn btn-gold btn-large mt-16" id="btn-start-snap">Ready - Go Fullscreen!</button>
       `;
 
-      // Disable snap buttons initially
-      game.allPlayerIndices.forEach(i => {
-        document.getElementById(`snap-btn-${i}`).disabled = true;
+      document.getElementById('btn-start-snap').onclick = () => {
+        self.launchFullscreen();
+      };
+    },
+
+    launchFullscreen() {
+      const self = Rounds['snap-showdown'];
+      const s = self.state;
+      const g = self.game;
+
+      // Create fullscreen overlay
+      const fs = document.createElement('div');
+      fs.className = 'snap-fullscreen';
+      fs.id = 'snap-fullscreen';
+      fs.innerHTML = `
+        <div class="snap-card-strip" id="snap-strip">
+          <div class="snap-status">Cards will appear here...<br>Watch for a match!</div>
+        </div>
+        <div class="snap-zones players-${g.playerCount}" id="snap-zones">
+          ${g.allPlayerIndices.map(i => `
+            <div class="snap-zone" data-player="${i}" id="snap-zone-${i}">
+              <span class="snap-zone-emoji">${g.getAvatarEmoji(i)}</span>
+              <span class="snap-zone-name">${g.players[i].name}</span>
+              <span class="snap-zone-label">SNAP!</span>
+            </div>
+          `).join('')}
+        </div>
+      `;
+      document.body.appendChild(fs);
+      self.fsEl = fs;
+
+      // Disable zones initially, start dealing after brief pause
+      g.allPlayerIndices.forEach(i => {
+        document.getElementById(`snap-zone-${i}`).setAttribute('disabled', '');
       });
 
-      document.getElementById('btn-start-snap').onclick = () => {
-        document.getElementById('btn-start-snap').style.display = 'none';
+      setTimeout(() => {
+        // Enable zones
+        g.allPlayerIndices.forEach(i => {
+          const zone = document.getElementById(`snap-zone-${i}`);
+          zone.removeAttribute('disabled');
+          zone.onclick = () => self.handleSnap(i);
+        });
         self.startDealing();
-      };
+      }, 800);
     },
 
     startDealing() {
@@ -494,51 +612,49 @@ const Rounds = {
       const s = self.state;
       const g = self.game;
 
-      // Enable snap buttons
-      g.allPlayerIndices.forEach(i => {
-        const btn = document.getElementById(`snap-btn-${i}`);
-        btn.disabled = false;
-        btn.classList.add('snap-btn-active');
-        btn.onclick = () => self.handleSnap(i);
-      });
-
       const dealNext = () => {
         if (s.matchFound) return;
-
         const card = g.deck.draw();
         s.cards.push(card);
 
-        const cardArea = document.getElementById('snap-cards');
-        if (cardArea) {
-          // Show last 2 cards
+        const strip = document.getElementById('snap-strip');
+        if (strip) {
           const show = s.cards.slice(-2);
-          cardArea.innerHTML = show.map(c => createCardHTML(c, { large: true, animClass: 'slam-in' })).join('');
+          strip.innerHTML = show.map(c =>
+            createCardHTML(c, { large: true, animClass: 'slam-in' })
+          ).join('<span style="color:var(--cream-dim);font-size:0.8rem;padding:0 4px">vs</span>');
         }
 
-        // Check for match (same value as previous)
         if (s.cards.length >= 2) {
           const prev = s.cards[s.cards.length - 2];
           const curr = s.cards[s.cards.length - 1];
           if (prev.value === curr.value) {
             s.snapActive = true;
-            // Auto-resolve after 3 seconds if nobody snaps
             s.snapTimeout = setTimeout(() => {
               if (!s.matchFound) {
                 s.matchFound = true;
                 clearInterval(s.intervalId);
-                // Nobody snapped - everyone drinks
+                self.cleanup();
                 const p = {};
                 g.allPlayerIndices.forEach(i => { p[i] = 2; });
-                self.onComplete(p);
+                self.area.innerHTML = `<h3 class="text-red text-center shake">TOO SLOW! Nobody snapped! Everyone drinks 2!</h3>`;
+                setTimeout(() => self.onComplete(p), 1500);
               }
             }, 3000);
           }
         }
       };
 
-      // Deal cards every 1.5 seconds
       dealNext();
       s.intervalId = setInterval(dealNext, 1500);
+    },
+
+    cleanup() {
+      const self = Rounds['snap-showdown'];
+      if (self.fsEl) {
+        self.fsEl.remove();
+        self.fsEl = null;
+      }
     },
 
     handleSnap(playerIndex) {
@@ -547,18 +663,13 @@ const Rounds = {
       const g = self.game;
 
       if (s.matchFound) return;
+      s.matchFound = true;
+      clearInterval(s.intervalId);
+      if (s.snapTimeout) clearTimeout(s.snapTimeout);
+      self.cleanup();
 
       if (s.snapActive) {
-        // Valid snap!
-        s.matchFound = true;
-        clearInterval(s.intervalId);
-        clearTimeout(s.snapTimeout);
-
-        // Flash effect
-        self.area.classList.add('snap-flash');
-
         g.winRound(playerIndex);
-        // Winner picks who gets 3 fingers
         const others = g.allPlayerIndices.filter(i => i !== playerIndex);
 
         self.area.innerHTML = `
@@ -581,17 +692,11 @@ const Rounds = {
             self.onComplete(penalties);
           };
         });
-
       } else {
-        // False snap! Penalty
-        s.matchFound = true;
-        clearInterval(s.intervalId);
-
         self.area.innerHTML = `
           <h3 class="text-red text-center shake">FALSE SNAP!</h3>
           <p class="text-center mt-8">${g.players[playerIndex].name} jumped the gun!</p>
         `;
-
         const penalties = {};
         penalties[playerIndex] = 3;
         setTimeout(() => self.onComplete(penalties), 1500);

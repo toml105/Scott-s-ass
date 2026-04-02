@@ -686,48 +686,163 @@ html, body {
   justify-content: center;
 }
 
-.snap-buttons-row {
+/* Full-screen snap zone layout */
+.snap-fullscreen {
+  position: fixed;
+  inset: 0;
   display: flex;
-  gap: 10px;
+  flex-direction: column;
+  z-index: 50;
+}
+
+.snap-card-strip {
+  display: flex;
+  align-items: center;
   justify-content: center;
+  gap: 8px;
+  padding: 8px;
+  background: var(--wood-dark);
+  border-bottom: 2px solid var(--gold);
+  min-height: 100px;
+  z-index: 51;
+}
+
+.snap-card-strip .card-large {
+  width: 70px;
+  height: 98px;
+}
+
+.snap-card-strip .card-value { font-size: 1.4rem; }
+.snap-card-strip .card-suit { font-size: 1.6rem; }
+
+.snap-card-strip .snap-status {
+  font-family: var(--font-display);
+  font-size: 0.8rem;
+  color: var(--cream-dim);
+  text-align: center;
+}
+
+.snap-zones {
+  flex: 1;
+  display: flex;
   flex-wrap: wrap;
 }
 
-.snap-btn {
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
-  background: radial-gradient(circle, var(--red-bright) 0%, var(--red) 100%);
-  border: 3px solid var(--gold);
-  color: var(--cream);
-  font-family: var(--font-display);
-  font-size: 0.7rem;
-  font-weight: bold;
-  cursor: pointer;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
-  transition: transform 0.1s;
+.snap-zone {
+  flex: 1 1 50%;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2px;
-  line-height: 1.2;
+  gap: 4px;
+  cursor: pointer;
+  border: 2px solid rgba(0,0,0,0.3);
+  transition: filter 0.1s;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
 }
 
-.snap-btn .snap-emoji {
-  font-size: 1.4rem;
+.snap-zone:active {
+  filter: brightness(1.4);
 }
 
-.snap-btn:active {
-  transform: scale(0.92);
+.snap-zone:disabled, .snap-zone[disabled] {
+  opacity: 0.3;
+  cursor: default;
 }
 
-.snap-btn:disabled {
+.snap-zone:nth-child(1) { background: #8B0000; }
+.snap-zone:nth-child(2) { background: #1B4D3E; }
+.snap-zone:nth-child(3) { background: #2C1870; }
+.snap-zone:nth-child(4) { background: #6B3A00; }
+.snap-zone:nth-child(5) { background: #4A0042; }
+
+/* 3 players: top 1, bottom 2 */
+.snap-zones.players-3 .snap-zone:nth-child(1) { flex: 1 1 100%; }
+.snap-zones.players-3 .snap-zone:nth-child(2) { flex: 1 1 50%; }
+.snap-zones.players-3 .snap-zone:nth-child(3) { flex: 1 1 50%; }
+
+/* 4 players: 2x2 grid */
+.snap-zones.players-4 .snap-zone { flex: 1 1 50%; }
+
+/* 5 players: top 2, mid 2, bottom 1 */
+.snap-zones.players-5 .snap-zone:nth-child(1) { flex: 1 1 50%; }
+.snap-zones.players-5 .snap-zone:nth-child(2) { flex: 1 1 50%; }
+.snap-zones.players-5 .snap-zone:nth-child(3) { flex: 1 1 50%; }
+.snap-zones.players-5 .snap-zone:nth-child(4) { flex: 1 1 50%; }
+.snap-zones.players-5 .snap-zone:nth-child(5) { flex: 1 1 100%; }
+
+.snap-zone-emoji {
+  font-size: 2.5rem;
+}
+
+.snap-zone-name {
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  color: white;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+  font-weight: bold;
+}
+
+.snap-zone-label {
+  font-size: 2rem;
+  font-family: var(--font-display);
+  color: rgba(255,255,255,0.7);
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  font-weight: bold;
+}
+
+/* Picture Guess */
+.picture-card {
+  width: 200px;
+  height: 200px;
+  background: var(--parchment);
+  border: 3px solid var(--gold);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 6rem;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+  position: relative;
+}
+
+.picture-card.hidden-picture {
   background: var(--wood-mid);
-  border-color: var(--wood-light);
-  opacity: 0.5;
+  font-size: 3rem;
+  color: var(--gold);
+}
+
+.question-counter {
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  color: var(--gold);
+  text-align: center;
+}
+
+.question-counter .sip-warning {
+  font-size: 0.85rem;
+  color: var(--red-bright);
+}
+
+.guess-input {
+  width: 100%;
+  max-width: 280px;
+  padding: 12px;
+  border: 2px solid var(--wood-light);
+  border-radius: 8px;
+  background: var(--wood-dark);
+  color: var(--cream);
+  font-size: 1rem;
+  outline: none;
+  font-family: var(--font-body);
+  text-align: center;
+}
+
+.guess-input:focus {
+  border-color: var(--gold);
 }
 
 /* Bloke's Gambit */

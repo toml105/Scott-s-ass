@@ -4,7 +4,7 @@
 
 const TOTAL_ROUNDS = 9;
 const ROUND_TYPES = [
-  'liars-draw',
+  'picture-guess',
   'tower-of-risk',
   'fates-choice',
   'snap-showdown',
@@ -13,10 +13,10 @@ const ROUND_TYPES = [
 ];
 
 const ROUND_INFO = {
-  'liars-draw': {
-    name: "Liar's Draw",
-    desc: "Bluff about your card. Get caught? Drink up. Catch a liar? They drink.",
-    icon: "&#129396;"
+  'picture-guess': {
+    name: "Picture Guess",
+    desc: "One player sees a picture. Others ask yes/no questions to guess it. More questions = more sips!",
+    icon: "&#128444;"
   },
   'tower-of-risk': {
     name: "Tower of Risk",
