@@ -1,0 +1,203 @@
+/* ============================================
+   TAVERN ROYALE - Animations
+   ============================================ */
+
+/* --- Flame flicker --- */
+@keyframes flicker {
+  0%   { transform: translateX(-50%) scale(1) rotate(-2deg); opacity: 1; }
+  25%  { transform: translateX(-50%) scale(1.05) rotate(1deg); opacity: 0.9; }
+  50%  { transform: translateX(-50%) scale(0.95) rotate(-1deg); opacity: 1; }
+  75%  { transform: translateX(-50%) scale(1.02) rotate(2deg); opacity: 0.85; }
+  100% { transform: translateX(-50%) scale(1) rotate(0deg); opacity: 1; }
+}
+
+/* --- Pulse --- */
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+/* --- Float --- */
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+/* --- Shake (drink penalty) --- */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-6px); }
+  20%, 40%, 60%, 80% { transform: translateX(6px); }
+}
+
+.shake {
+  animation: shake 0.5s ease-in-out;
+}
+
+/* --- Card deal (slide in from top) --- */
+@keyframes dealCard {
+  0% { transform: translateY(-100px) rotate(-10deg); opacity: 0; }
+  100% { transform: translateY(0) rotate(0deg); opacity: 1; }
+}
+
+.deal-in {
+  animation: dealCard 0.4s ease-out forwards;
+}
+
+/* --- Card slam --- */
+@keyframes slamCard {
+  0% { transform: scale(1.5); opacity: 0; }
+  70% { transform: scale(0.95); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.slam-in {
+  animation: slamCard 0.3s ease-out forwards;
+}
+
+/* --- Glow pulse --- */
+@keyframes glowPulse {
+  0%, 100% { box-shadow: 0 0 8px rgba(212,168,71,0.3); }
+  50% { box-shadow: 0 0 20px rgba(212,168,71,0.6); }
+}
+
+.glow {
+  animation: glowPulse 1.5s ease-in-out infinite;
+}
+
+/* --- Slide up --- */
+@keyframes slideUp {
+  0% { transform: translateY(30px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+
+.slide-up {
+  animation: slideUp 0.3s ease-out forwards;
+}
+
+/* --- Slide down --- */
+@keyframes slideDown {
+  0% { transform: translateY(-30px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+
+.slide-down {
+  animation: slideDown 0.3s ease-out forwards;
+}
+
+/* --- Fade in --- */
+@keyframes fadeIn {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+.fade-in {
+  animation: fadeIn 0.4s ease-out forwards;
+}
+
+/* --- Pop in --- */
+@keyframes popIn {
+  0% { transform: scale(0); opacity: 0; }
+  70% { transform: scale(1.1); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.pop-in {
+  animation: popIn 0.3s ease-out forwards;
+}
+
+/* --- Drink count up --- */
+@keyframes countPop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.5); color: #FFD700; }
+  100% { transform: scale(1); }
+}
+
+.count-pop {
+  animation: countPop 0.4s ease-out;
+}
+
+/* --- Skull King entrance --- */
+@keyframes skullEntrance {
+  0% { transform: scale(0) rotate(-180deg); opacity: 0; }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+
+.skull-entrance {
+  animation: skullEntrance 0.6s ease-out forwards;
+}
+
+/* --- Snap flash --- */
+@keyframes snapFlash {
+  0% { background: rgba(255,215,0,0.6); }
+  100% { background: transparent; }
+}
+
+.snap-flash {
+  animation: snapFlash 0.3s ease-out;
+}
+
+/* --- Winner sparkle --- */
+@keyframes sparkle {
+  0%, 100% { text-shadow: 0 0 4px rgba(255,215,0,0.4); }
+  50% { text-shadow: 0 0 16px rgba(255,215,0,0.8), 0 0 30px rgba(255,215,0,0.4); }
+}
+
+.sparkle {
+  animation: sparkle 1s ease-in-out infinite;
+}
+
+/* --- Bust explosion --- */
+@keyframes bust {
+  0% { transform: scale(1); }
+  25% { transform: scale(1.2) rotate(5deg); }
+  50% { transform: scale(0.9) rotate(-5deg); }
+  75% { transform: scale(1.1) rotate(3deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+
+.bust {
+  animation: bust 0.5s ease-out;
+}
+
+/* --- Staggered children --- */
+.stagger > *:nth-child(1) { animation-delay: 0s; }
+.stagger > *:nth-child(2) { animation-delay: 0.1s; }
+.stagger > *:nth-child(3) { animation-delay: 0.2s; }
+.stagger > *:nth-child(4) { animation-delay: 0.3s; }
+.stagger > *:nth-child(5) { animation-delay: 0.4s; }
+
+/* --- Waterfall wave --- */
+@keyframes wave {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+.wave {
+  animation: wave 0.6s ease-in-out infinite;
+}
+
+/* --- Screen transitions --- */
+.screen {
+  transition: opacity 0.4s ease;
+}
+
+/* --- Snap button pulse when active --- */
+@keyframes snapPulse {
+  0%, 100% { box-shadow: 0 4px 20px rgba(0,0,0,0.5); }
+  50% { box-shadow: 0 4px 30px rgba(204,34,0,0.6), 0 0 40px rgba(204,34,0,0.3); }
+}
+
+.snap-btn-active {
+  animation: snapPulse 0.8s ease-in-out infinite;
+}
+
+/* --- Number reveal --- */
+@keyframes numberReveal {
+  0% { transform: rotateX(90deg); opacity: 0; }
+  100% { transform: rotateX(0deg); opacity: 1; }
+}
+
+.number-reveal {
+  animation: numberReveal 0.4s ease-out forwards;
+}

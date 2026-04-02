@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#2C1810">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Tavern Royale">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/animations.css">
+  <title>Tavern Royale</title>
+</head>
+<body>
+  <!-- SPLASH SCREEN -->
+  <div id="screen-splash" class="screen active">
+    <div class="splash-content">
+      <div class="tavern-sign">
+        <div class="sign-chain left"></div>
+        <div class="sign-chain right"></div>
+        <div class="sign-board">
+          <h1 class="game-title">Tavern<br>Royale</h1>
+          <div class="subtitle">A Drinking Game for Blokes</div>
+        </div>
+      </div>
+      <div class="candle-container">
+        <div class="candle">
+          <div class="flame"></div>
+        </div>
+      </div>
+      <button class="btn btn-gold btn-large" id="btn-start">Enter the Tavern</button>
+    </div>
+  </div>
+
+  <!-- PLAYER SETUP -->
+  <div id="screen-setup" class="screen">
+    <div class="setup-content">
+      <h2 class="screen-title">Who's Drinking?</h2>
+      <div class="player-inputs">
+        <div class="player-input-group" data-player="0">
+          <div class="avatar-selector">
+            <button class="avatar-btn selected" data-avatar="beer">&#127866;</button>
+            <button class="avatar-btn" data-avatar="whisky">&#129347;</button>
+            <button class="avatar-btn" data-avatar="wine">&#127863;</button>
+            <button class="avatar-btn" data-avatar="cocktail">&#127864;</button>
+          </div>
+          <input type="text" class="player-name-input" placeholder="Bloke #1" maxlength="12" autocomplete="off">
+        </div>
+        <div class="player-input-group" data-player="1">
+          <div class="avatar-selector">
+            <button class="avatar-btn" data-avatar="beer">&#127866;</button>
+            <button class="avatar-btn selected" data-avatar="whisky">&#129347;</button>
+            <button class="avatar-btn" data-avatar="wine">&#127863;</button>
+            <button class="avatar-btn" data-avatar="cocktail">&#127864;</button>
+          </div>
+          <input type="text" class="player-name-input" placeholder="Bloke #2" maxlength="12" autocomplete="off">
+        </div>
+        <div class="player-input-group" data-player="2">
+          <div class="avatar-selector">
+            <button class="avatar-btn" data-avatar="beer">&#127866;</button>
+            <button class="avatar-btn" data-avatar="whisky">&#129347;</button>
+            <button class="avatar-btn selected" data-avatar="wine">&#127863;</button>
+            <button class="avatar-btn" data-avatar="cocktail">&#127864;</button>
+          </div>
+          <input type="text" class="player-name-input" placeholder="Bloke #3" maxlength="12" autocomplete="off">
+        </div>
+      </div>
+      <button class="btn btn-gold btn-large" id="btn-begin">Let's Go!</button>
+    </div>
+  </div>
+
+  <!-- GAME BOARD -->
+  <div id="screen-game" class="screen">
+    <div class="game-header">
+      <div class="round-info">
+        <span class="round-label">Round</span>
+        <span class="round-number" id="round-number">1/9</span>
+        <span class="round-multiplier" id="round-multiplier">x1</span>
+      </div>
+      <button class="btn btn-small btn-dark" id="btn-scoreboard">Scores</button>
+    </div>
+
+    <div class="player-bar">
+      <div class="player-chip" data-player="0">
+        <span class="chip-avatar" id="p0-avatar"></span>
+        <span class="chip-name" id="p0-name"></span>
+        <span class="chip-fingers" id="p0-fingers">0</span>
+        <span class="chip-immunity" id="p0-immunity" title="Immunity Token">&#128737;</span>
+      </div>
+      <div class="player-chip" data-player="1">
+        <span class="chip-avatar" id="p1-avatar"></span>
+        <span class="chip-name" id="p1-name"></span>
+        <span class="chip-fingers" id="p1-fingers">0</span>
+        <span class="chip-immunity" id="p1-immunity" title="Immunity Token">&#128737;</span>
+      </div>
+      <div class="player-chip" data-player="2">
+        <span class="chip-avatar" id="p2-avatar"></span>
+        <span class="chip-name" id="p2-name"></span>
+        <span class="chip-fingers" id="p2-fingers">0</span>
+        <span class="chip-immunity" id="p2-immunity" title="Immunity Token">&#128737;</span>
+      </div>
+    </div>
+
+    <!-- Round type header -->
+    <div class="round-header" id="round-header">
+      <h2 class="round-type-name" id="round-type-name"></h2>
+      <p class="round-type-desc" id="round-type-desc"></p>
+    </div>
+
+    <!-- Dynamic round content area -->
+    <div class="round-area" id="round-area"></div>
+
+    <!-- Active rules banner -->
+    <div class="active-rules" id="active-rules" style="display:none">
+      <div class="rules-label">Active Rules:</div>
+      <div class="rules-list" id="rules-list"></div>
+    </div>
+  </div>
+
+  <!-- DRINK PENALTY SCREEN -->
+  <div id="screen-drink" class="screen">
+    <div class="drink-content">
+      <h2 class="drink-title" id="drink-title">Time to Drink!</h2>
+      <div class="drink-assignments" id="drink-assignments"></div>
+      <div class="drink-skull-king" id="drink-skull-king" style="display:none">
+        <button class="btn btn-red" id="btn-skull-king">&#9760; Skull King: Double Someone's Penalty!</button>
+      </div>
+      <button class="btn btn-gold btn-large" id="btn-cheers">Cheers! &#127867;</button>
+    </div>
+  </div>
+
+  <!-- SCOREBOARD OVERLAY -->
+  <div id="screen-scoreboard" class="screen">
+    <div class="scoreboard-content">
+      <h2 class="screen-title">Scoreboard</h2>
+      <div class="scoreboard-players" id="scoreboard-players"></div>
+      <button class="btn btn-gold" id="btn-close-scoreboard">Back to Game</button>
+    </div>
+  </div>
+
+  <!-- END SCREEN -->
+  <div id="screen-end" class="screen">
+    <div class="end-content">
+      <div class="end-crown">&#128081;</div>
+      <h2 class="end-title">Game Over!</h2>
+      <div class="end-rankings" id="end-rankings"></div>
+      <div class="end-punishment" id="end-punishment"></div>
+      <button class="btn btn-gold btn-large" id="btn-play-again">Play Again?</button>
+    </div>
+  </div>
+
+  <script src="js/cards.js"></script>
+  <script src="js/game.js"></script>
+  <script src="js/rounds.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
