@@ -131,27 +131,8 @@
     });
   }
 
-  function onRoundComplete(penalties, special) {
-    // Handle special: 'assign' means winner assigns 2 fingers
-    if (special === 'assign') {
-      // Find who won this round (highest roundsWon)
-      let roundWinner = 0;
-      let maxWins = -1;
-      for (let i = 0; i < game.playerCount; i++) {
-        if (game.players[i].roundsWon > maxWins) {
-          maxWins = game.players[i].roundsWon;
-          roundWinner = i;
-        }
-      }
-
-      UI.showAssignOverlay(game, roundWinner, 2, (target) => {
-        if (!penalties) penalties = {};
-        penalties[target] = (penalties[target] || 0) + 2;
-        showPenalties(penalties);
-      });
-    } else {
-      showPenalties(penalties || {});
-    }
+  function onRoundComplete(penalties) {
+    showPenalties(penalties || {});
   }
 
   function showPenalties(penalties) {

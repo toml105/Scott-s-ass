@@ -249,7 +249,7 @@ const Rounds = {
   },
 
   // ==========================================
-  // 2. TOWER OF RISK - Blackjack style
+  // 2. TOWER OF RISK - Blind push-your-luck
   // ==========================================
   'tower-of-risk': {
     state: {},
@@ -259,15 +259,29 @@ const Rounds = {
       self.game = game;
       self.onComplete = onComplete;
       self.state = {
-        total: 0,
-        cardsPlayed: [],
+        hands: {}, // playerIndex -> [cards]
         activePlayers: game.allPlayerIndices.slice(),
         currentTurn: 0,
-        lastStacker: -1,
-        bailed: []
+        bailed: {},  // playerIndex -> total when bailed
+        busted: {},  // playerIndex -> total when busted
+        round: 1     // which draw round we're on
       };
+      // Init hands
+      game.allPlayerIndices.forEach(i => { self.state.hands[i] = []; });
       self.area = area;
       self.render();
+    },
+
+    getHandTotal(cards) {
+      let total = 0;
+      let aces = 0;
+      for (const c of cards) {
+        if (c.value === 'A') { aces++; total += 11; }
+        else if (['J','Q','K'].includes(c.value)) { total += 10; }
+        else { total += c.numValue; }
+      }
+      while (total > 21 && aces > 0) { total -= 10; aces--; }
+      return total;
     },
 
     render() {
@@ -275,52 +289,94 @@ const Rounds = {
       const s = self.state;
       const g = self.game;
 
-      if (s.activePlayers.length === 0 || s.total > 21) {
+      // If 0 or 1 active players left, resolve
+      if (s.activePlayers.length <= 1) {
         self.resolve();
         return;
       }
 
       const cp = s.activePlayers[s.currentTurn % s.activePlayers.length];
-      const dangerClass = s.total >= 17 ? 'danger' : '';
+      const myCards = s.hands[cp];
+      const myTotal = self.getHandTotal(myCards);
 
       self.area.innerHTML = `
-        <div class="tower-total ${dangerClass}">${s.total}</div>
-        <p class="text-dim text-center">Target: 21 | Don't bust!</p>
-        <div class="card-row mt-8">
-          ${s.cardsPlayed.slice(-5).map(c => createCardHTML(c, { animClass: '' })).join('')}
+        <div class="turn-indicator">${g.getAvatarEmoji(cp)} ${g.players[cp].name}'s Turn</div>
+        <p class="text-dim text-center mt-8">Your hand: <strong class="text-gold">${myTotal}</strong> from ${myCards.length} card${myCards.length !== 1 ? 's' : ''}</p>
+        <p class="text-dim text-center">Bust over 21 = drink <strong class="text-red">5 fingers</strong></p>
+        <p class="text-dim text-center">Bail now = drink <strong class="text-red">${Math.max(1, Math.ceil(myCards.length / 2))} fingers</strong> (bail tax)</p>
+        <p class="text-dim text-center">Last one standing wins and assigns <strong class="text-gold">3 fingers</strong>!</p>
+        <div class="card-row mt-16">
+          ${myCards.map(c => createCardHTML(c, {})).join('')}
+          ${createFaceDownCardHTML({ animClass: 'deal-in' })}
         </div>
-        <div class="turn-indicator mt-16">${g.getAvatarEmoji(cp)} ${g.players[cp].name}'s Turn</div>
         <div class="tower-actions mt-16">
-          <button class="btn btn-red btn-large" id="btn-stack">&#127183; Stack (draw card)</button>
-          <button class="btn btn-gold btn-large" id="btn-bail">&#128694; Bail (safe)</button>
+          <button class="btn btn-red btn-large" id="btn-hit">&#127183; Hit Me!</button>
+          <button class="btn btn-gold btn-large" id="btn-bail">&#128694; Bail (${Math.max(1, Math.ceil(myCards.length / 2))} fingers)</button>
         </div>
+        <p class="text-dim text-center mt-8">Players still in: ${s.activePlayers.map(i => g.players[i].name).join(', ')}</p>
       `;
 
-      document.getElementById('btn-stack').onclick = () => {
+      document.getElementById('btn-hit').onclick = () => {
         const card = g.deck.draw();
-        const val = Math.min(card.numValue, 10); // Face cards = 10, Ace handled below
-        const addVal = card.value === 'A' ? (s.total + 11 > 21 ? 1 : 11) : val;
-        s.total += addVal;
-        s.cardsPlayed.push(card);
-        s.lastStacker = cp;
+        myCards.push(card);
+        const newTotal = self.getHandTotal(myCards);
 
-        if (s.total > 21) {
-          self.render();
-          return;
+        if (newTotal > 21) {
+          // Bust!
+          s.busted[cp] = newTotal;
+          s.activePlayers = s.activePlayers.filter(p => p !== cp);
+
+          self.area.innerHTML = `
+            <h3 class="text-red text-center shake">BUST! ${newTotal}!</h3>
+            <div class="card-row mt-16">
+              ${myCards.map(c => createCardHTML(c, {})).join('')}
+            </div>
+            <p class="text-center mt-8">${g.players[cp].name} is out and drinks <strong class="text-red">5 fingers</strong>!</p>
+          `;
+
+          setTimeout(() => {
+            if (s.activePlayers.length <= 1) {
+              self.resolve();
+            } else {
+              s.currentTurn = s.currentTurn % s.activePlayers.length;
+              self.render();
+            }
+          }, 1800);
+        } else {
+          // Safe - show the card briefly then move on
+          self.area.innerHTML = `
+            <h3 class="text-gold text-center">Safe! ${newTotal}</h3>
+            <div class="card-row mt-16">
+              ${myCards.map(c => createCardHTML(c, { animClass: c === card ? 'slam-in' : '' })).join('')}
+            </div>
+            <p class="text-center mt-8">${g.players[cp].name} is on ${newTotal}. Pass the phone!</p>
+          `;
+
+          setTimeout(() => {
+            s.currentTurn++;
+            if (s.currentTurn >= s.activePlayers.length) s.currentTurn = 0;
+            self.render();
+          }, 1500);
         }
-        s.currentTurn++;
-        self.render();
       };
 
       document.getElementById('btn-bail').onclick = () => {
-        s.bailed.push(cp);
+        const bailCost = Math.max(1, Math.ceil(myCards.length / 2));
+        s.bailed[cp] = bailCost;
         s.activePlayers = s.activePlayers.filter(p => p !== cp);
-        if (s.activePlayers.length === 0) {
-          self.render();
-          return;
-        }
-        s.currentTurn = s.currentTurn % s.activePlayers.length;
-        self.render();
+
+        self.area.innerHTML = `
+          <p class="text-center mt-8">${g.players[cp].name} bails on ${myTotal} and drinks <strong class="text-red">${bailCost}</strong> finger${bailCost !== 1 ? 's' : ''} bail tax!</p>
+        `;
+
+        setTimeout(() => {
+          if (s.activePlayers.length <= 1) {
+            self.resolve();
+          } else {
+            s.currentTurn = s.currentTurn % s.activePlayers.length;
+            self.render();
+          }
+        }, 1200);
       };
     },
 
@@ -330,33 +386,56 @@ const Rounds = {
       const g = self.game;
       const penalties = {};
 
-      if (s.total > 21) {
-        // Whoever stacked last busted
-        const overBy = Math.min(s.total - 21, 5);
-        penalties[s.lastStacker] = overBy;
-
-        self.area.innerHTML = `
-          <div class="tower-total danger bust">${s.total}</div>
-          <h3 class="text-red text-center mt-8">BUST!</h3>
-          <p class="text-center mt-8">${g.players[s.lastStacker].name} went over by ${s.total - 21}!</p>
-        `;
-
-        // Winner is whoever bailed last (or first bailer if all bailed)
-        if (s.bailed.length > 0) {
-          g.winRound(s.bailed[s.bailed.length - 1]);
-        }
-      } else {
-        // All bailed, last one standing wins
-        const lastActive = s.bailed.length > 0 ? s.bailed[s.bailed.length - 1] : 0;
-        self.area.innerHTML = `
-          <div class="tower-total">${s.total}</div>
-          <h3 class="text-gold text-center mt-8">Everyone Bailed!</h3>
-        `;
-        // Winner assigns 2 fingers - handled via onComplete with special flag
-        g.winRound(lastActive);
+      // Apply bust penalties
+      for (const [pi, total] of Object.entries(s.busted)) {
+        penalties[parseInt(pi)] = 5;
       }
 
-      setTimeout(() => self.onComplete(penalties, s.total <= 21 ? 'assign' : null), 2000);
+      // Apply bail penalties
+      for (const [pi, cost] of Object.entries(s.bailed)) {
+        penalties[parseInt(pi)] = cost;
+      }
+
+      // Winner is whoever is left (or last to bail if everyone bailed/busted)
+      let winner = -1;
+      if (s.activePlayers.length === 1) {
+        winner = s.activePlayers[0];
+      } else {
+        // Everyone busted/bailed - last person to bail wins
+        const allOut = g.allPlayerIndices;
+        winner = allOut[allOut.length - 1]; // fallback
+      }
+
+      if (winner >= 0) {
+        g.winRound(winner);
+        const winnerTotal = self.getHandTotal(s.hands[winner] || []);
+
+        self.area.innerHTML = `
+          <h3 class="text-gold text-center sparkle">${g.players[winner].name} Wins!</h3>
+          <p class="text-center mt-8">Last one standing on ${winnerTotal}!</p>
+          <p class="text-center mt-8">Assign 3 fingers to someone:</p>
+          <div class="player-select-row mt-16">
+            ${g.allPlayerIndices.filter(i => i !== winner).map(i => `
+              <button class="player-select-btn" data-player="${i}">
+                ${g.getAvatarEmoji(i)} ${g.players[i].name}
+              </button>
+            `).join('')}
+          </div>
+        `;
+
+        self.area.querySelectorAll('.player-select-btn').forEach(btn => {
+          btn.onclick = () => {
+            const target = parseInt(btn.dataset.player);
+            penalties[target] = (penalties[target] || 0) + 3;
+            self.onComplete(penalties);
+          };
+        });
+      } else {
+        self.area.innerHTML = `<h3 class="text-red text-center">Everyone's out!</h3>`;
+        setTimeout(() => self.onComplete(penalties), 1500);
+      }
+    }
+  },
     }
   },
 

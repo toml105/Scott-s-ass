@@ -20,7 +20,7 @@ const ROUND_INFO = {
   },
   'tower-of-risk': {
     name: "Tower of Risk",
-    desc: "Stack cards toward 21. Bail to safety, or push your luck!",
+    desc: "Draw cards to build your hand. Bust over 21 = 5 fingers. Bail = pay a tax. Last one standing wins!",
     icon: "&#127183;"
   },
   'fates-choice': {
