@@ -249,7 +249,7 @@ const Rounds = {
   },
 
   // ==========================================
-  // 2. TOWER OF RISK - Blind push-your-luck
+  // 2. TOWER OF RISK - Push-your-luck
   // ==========================================
   'tower-of-risk': {
     state: {},
@@ -258,16 +258,18 @@ const Rounds = {
       const self = Rounds['tower-of-risk'];
       self.game = game;
       self.onComplete = onComplete;
+      // Deal everyone 2 cards to start
+      const hands = {};
+      game.allPlayerIndices.forEach(i => {
+        hands[i] = [game.deck.draw(), game.deck.draw()];
+      });
       self.state = {
-        hands: {}, // playerIndex -> [cards]
+        hands: hands,
         activePlayers: game.allPlayerIndices.slice(),
         currentTurn: 0,
-        bailed: {},  // playerIndex -> total when bailed
-        busted: {},  // playerIndex -> total when busted
-        round: 1     // which draw round we're on
+        bailedPenalties: {},
+        bustedPenalties: {}
       };
-      // Init hands
-      game.allPlayerIndices.forEach(i => { self.state.hands[i] = []; });
       self.area = area;
       self.render();
     },
@@ -289,7 +291,6 @@ const Rounds = {
       const s = self.state;
       const g = self.game;
 
-      // If 0 or 1 active players left, resolve
       if (s.activePlayers.length <= 1) {
         self.resolve();
         return;
@@ -298,22 +299,25 @@ const Rounds = {
       const cp = s.activePlayers[s.currentTurn % s.activePlayers.length];
       const myCards = s.hands[cp];
       const myTotal = self.getHandTotal(myCards);
+      const bailCost = Math.ceil(myCards.length / 2);
+      const dangerClass = myTotal >= 16 ? ' text-red' : ' text-gold';
 
       self.area.innerHTML = `
         <div class="turn-indicator">${g.getAvatarEmoji(cp)} ${g.players[cp].name}'s Turn</div>
-        <p class="text-dim text-center mt-8">Your hand: <strong class="text-gold">${myTotal}</strong> from ${myCards.length} card${myCards.length !== 1 ? 's' : ''}</p>
-        <p class="text-dim text-center">Bust over 21 = drink <strong class="text-red">5 fingers</strong></p>
-        <p class="text-dim text-center">Bail now = drink <strong class="text-red">${Math.max(1, Math.ceil(myCards.length / 2))} fingers</strong> (bail tax)</p>
-        <p class="text-dim text-center">Last one standing wins and assigns <strong class="text-gold">3 fingers</strong>!</p>
-        <div class="card-row mt-16">
+        <p class="text-center mt-8" style="font-size:1.3rem">Your hand: <strong class="${dangerClass}">${myTotal}</strong></p>
+        <div class="card-row mt-8">
           ${myCards.map(c => createCardHTML(c, {})).join('')}
-          ${createFaceDownCardHTML({ animClass: 'deal-in' })}
+        </div>
+        <div class="mt-16" style="background:var(--wood-mid);border-radius:8px;padding:12px;width:100%;max-width:320px">
+          <p class="text-dim text-center" style="font-size:0.85rem">&#128163; Bust over 21 = <strong class="text-red">5 fingers</strong></p>
+          <p class="text-dim text-center" style="font-size:0.85rem">&#128694; Bail now = <strong class="text-red">${bailCost} finger${bailCost !== 1 ? 's' : ''}</strong> bail tax</p>
+          <p class="text-dim text-center" style="font-size:0.85rem">&#127942; Last standing = assign <strong class="text-gold">3 fingers</strong></p>
         </div>
         <div class="tower-actions mt-16">
           <button class="btn btn-red btn-large" id="btn-hit">&#127183; Hit Me!</button>
-          <button class="btn btn-gold btn-large" id="btn-bail">&#128694; Bail (${Math.max(1, Math.ceil(myCards.length / 2))} fingers)</button>
+          <button class="btn btn-gold btn-large" id="btn-bail">&#128694; Bail (${bailCost})</button>
         </div>
-        <p class="text-dim text-center mt-8">Players still in: ${s.activePlayers.map(i => g.players[i].name).join(', ')}</p>
+        <p class="text-dim text-center mt-8" style="font-size:0.8rem">Still in: ${s.activePlayers.map(i => g.players[i].name).join(', ')}</p>
       `;
 
       document.getElementById('btn-hit').onclick = () => {
@@ -322,8 +326,7 @@ const Rounds = {
         const newTotal = self.getHandTotal(myCards);
 
         if (newTotal > 21) {
-          // Bust!
-          s.busted[cp] = newTotal;
+          s.bustedPenalties[cp] = 5;
           s.activePlayers = s.activePlayers.filter(p => p !== cp);
 
           self.area.innerHTML = `
@@ -331,51 +334,41 @@ const Rounds = {
             <div class="card-row mt-16">
               ${myCards.map(c => createCardHTML(c, {})).join('')}
             </div>
-            <p class="text-center mt-8">${g.players[cp].name} is out and drinks <strong class="text-red">5 fingers</strong>!</p>
+            <p class="text-center mt-8">${g.players[cp].name} busted! <strong class="text-red">5 fingers!</strong></p>
           `;
 
           setTimeout(() => {
-            if (s.activePlayers.length <= 1) {
-              self.resolve();
-            } else {
-              s.currentTurn = s.currentTurn % s.activePlayers.length;
-              self.render();
-            }
+            s.currentTurn = s.currentTurn % Math.max(s.activePlayers.length, 1);
+            self.render();
           }, 1800);
         } else {
-          // Safe - show the card briefly then move on
           self.area.innerHTML = `
             <h3 class="text-gold text-center">Safe! ${newTotal}</h3>
             <div class="card-row mt-16">
               ${myCards.map(c => createCardHTML(c, { animClass: c === card ? 'slam-in' : '' })).join('')}
             </div>
-            <p class="text-center mt-8">${g.players[cp].name} is on ${newTotal}. Pass the phone!</p>
+            <p class="text-center mt-8">Pass the phone to the next player!</p>
           `;
 
           setTimeout(() => {
-            s.currentTurn++;
-            if (s.currentTurn >= s.activePlayers.length) s.currentTurn = 0;
+            s.currentTurn = (s.currentTurn + 1) % s.activePlayers.length;
             self.render();
           }, 1500);
         }
       };
 
       document.getElementById('btn-bail').onclick = () => {
-        const bailCost = Math.max(1, Math.ceil(myCards.length / 2));
-        s.bailed[cp] = bailCost;
+        s.bailedPenalties[cp] = bailCost;
         s.activePlayers = s.activePlayers.filter(p => p !== cp);
 
         self.area.innerHTML = `
-          <p class="text-center mt-8">${g.players[cp].name} bails on ${myTotal} and drinks <strong class="text-red">${bailCost}</strong> finger${bailCost !== 1 ? 's' : ''} bail tax!</p>
+          <p class="text-center">${g.getAvatarEmoji(cp)} ${g.players[cp].name} bails on ${myTotal}!</p>
+          <p class="text-center mt-8">Bail tax: <strong class="text-red">${bailCost} finger${bailCost !== 1 ? 's' : ''}</strong></p>
         `;
 
         setTimeout(() => {
-          if (s.activePlayers.length <= 1) {
-            self.resolve();
-          } else {
-            s.currentTurn = s.currentTurn % s.activePlayers.length;
-            self.render();
-          }
+          s.currentTurn = s.currentTurn % Math.max(s.activePlayers.length, 1);
+          self.render();
         }, 1200);
       };
     },
@@ -386,36 +379,27 @@ const Rounds = {
       const g = self.game;
       const penalties = {};
 
-      // Apply bust penalties
-      for (const [pi, total] of Object.entries(s.busted)) {
-        penalties[parseInt(pi)] = 5;
+      // Collect all bust and bail penalties
+      for (const [pi, cost] of Object.entries(s.bustedPenalties)) {
+        penalties[parseInt(pi)] = cost;
       }
-
-      // Apply bail penalties
-      for (const [pi, cost] of Object.entries(s.bailed)) {
+      for (const [pi, cost] of Object.entries(s.bailedPenalties)) {
         penalties[parseInt(pi)] = cost;
       }
 
-      // Winner is whoever is left (or last to bail if everyone bailed/busted)
-      let winner = -1;
+      // Winner is the last player standing
       if (s.activePlayers.length === 1) {
-        winner = s.activePlayers[0];
-      } else {
-        // Everyone busted/bailed - last person to bail wins
-        const allOut = g.allPlayerIndices;
-        winner = allOut[allOut.length - 1]; // fallback
-      }
-
-      if (winner >= 0) {
+        const winner = s.activePlayers[0];
         g.winRound(winner);
-        const winnerTotal = self.getHandTotal(s.hands[winner] || []);
+        const winnerTotal = self.getHandTotal(s.hands[winner]);
+        const others = g.allPlayerIndices.filter(i => i !== winner);
 
         self.area.innerHTML = `
           <h3 class="text-gold text-center sparkle">${g.players[winner].name} Wins!</h3>
-          <p class="text-center mt-8">Last one standing on ${winnerTotal}!</p>
+          <p class="text-center mt-8">Survived on ${winnerTotal}!</p>
           <p class="text-center mt-8">Assign 3 fingers to someone:</p>
           <div class="player-select-row mt-16">
-            ${g.allPlayerIndices.filter(i => i !== winner).map(i => `
+            ${others.map(i => `
               <button class="player-select-btn" data-player="${i}">
                 ${g.getAvatarEmoji(i)} ${g.players[i].name}
               </button>
@@ -431,7 +415,11 @@ const Rounds = {
           };
         });
       } else {
-        self.area.innerHTML = `<h3 class="text-red text-center">Everyone's out!</h3>`;
+        // Everyone busted/bailed at the same time - no winner
+        self.area.innerHTML = `
+          <h3 class="text-red text-center shake">Everyone's Out!</h3>
+          <p class="text-center mt-8">No winner this round. Everyone pays their penalty!</p>
+        `;
         setTimeout(() => self.onComplete(penalties), 1500);
       }
     }
