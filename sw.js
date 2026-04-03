@@ -1,14 +1,14 @@
-const CACHE_NAME = 'tavern-royale-v8';
+const CACHE_NAME = 'tavern-royale-v9';
 const ASSETS = [
   './',
   './index.html',
-  './css/styles.css',
-  './css/animations.css',
-  './js/cards.js',
-  './js/game.js',
-  './js/rounds.js',
-  './js/ui.js',
-  './js/app.js',
+  './css/styles.css?v=8',
+  './css/animations.css?v=8',
+  './js/cards.js?v=8',
+  './js/game.js?v=8',
+  './js/rounds.js?v=8',
+  './js/ui.js?v=8',
+  './js/app.js?v=8',
   './icons/icon-192.png',
   './icons/icon-512.png',
   './manifest.json'
@@ -30,8 +30,15 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
+// Network-first: try fresh files, fall back to cache for offline
 self.addEventListener('fetch', (event) => {
   event.respondWith(
-    caches.match(event.request).then((cached) => cached || fetch(event.request))
+    fetch(event.request)
+      .then((response) => {
+        const clone = response.clone();
+        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+        return response;
+      })
+      .catch(() => caches.match(event.request))
   );
 });
