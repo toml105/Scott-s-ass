@@ -424,8 +424,6 @@ const Rounds = {
       }
     }
   },
-    }
-  },
 
   // ==========================================
   // 3. FATE'S CHOICE - Kings Cup inspired
