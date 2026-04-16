@@ -65,7 +65,7 @@ const UI = {
 
   // Update round info header
   updateRoundInfo(game) {
-    document.getElementById('round-number').textContent = `${game.currentRound + 1}/${TOTAL_ROUNDS}`;
+    document.getElementById('round-number').textContent = `${game.currentRound + 1}/${game.totalRounds}`;
     document.getElementById('round-multiplier').textContent = game.multiplierLabel;
 
     const info = game.currentRoundInfo;
@@ -302,10 +302,11 @@ const UI = {
     `).join('');
 
     const loser = rankings[pc - 1];
+    const chooser = pc === 2 ? 'the winner' : 'the others';
     document.getElementById('end-punishment').innerHTML = `
       <strong>&#9760; Punishment Round!</strong><br>
       ${loser.name} must skull the rest of their beer<br>
-      OR do a dare chosen by the others!
+      OR do a dare chosen by ${chooser}!
     `;
 
     this.showScreen('end');

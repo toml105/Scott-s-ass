@@ -153,6 +153,12 @@ const Rounds = {
       const g = self.game;
       const others = g.allPlayerIndices.filter(i => i !== s.holder);
 
+      // With only one other player, skip the picker and go straight to input.
+      if (others.length === 1) {
+        self.showGuessInput(others[0]);
+        return;
+      }
+
       self.area.innerHTML = `
         <div class="turn-indicator">Time to Guess!</div>
         <div class="picture-card hidden-picture mt-8">&#10068;</div>
@@ -476,6 +482,24 @@ const Rounds = {
       if (card.suit === 'hearts') {
         // Mates - pick someone to drink with
         const otherPlayers = g.allPlayerIndices.filter(i => i !== s.drawer);
+
+        if (otherPlayers.length === 1) {
+          // 2-player mode: no choice, both drink together
+          const mate = otherPlayers[0];
+          actionArea.innerHTML = `
+            <div class="suit-icon" style="color:#CC2200">${SUIT_SYMBOLS.hearts}</div>
+            <div class="fate-instruction">MATES! Drink together - ${baseFingers} fingers each!</div>
+            <p class="text-center mt-8">${g.players[s.drawer].name} + ${g.players[mate].name} &#127867;</p>
+          `;
+          setTimeout(() => {
+            const penalties = {};
+            penalties[s.drawer] = baseFingers;
+            penalties[mate] = baseFingers;
+            self.onComplete(penalties);
+          }, 1400);
+          return;
+        }
+
         actionArea.innerHTML = `
           <div class="suit-icon" style="color:#CC2200">${SUIT_SYMBOLS.hearts}</div>
           <div class="fate-instruction">MATES! Pick a drinking buddy (${baseFingers} fingers each)</div>
