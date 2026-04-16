@@ -2,6 +2,8 @@
    TAVERN ROYALE - Game State Engine
    ============================================ */
 
+const TOTAL_ROUNDS_BY_COUNT = { 2: 7, 3: 9, 4: 9, 5: 9 };
+// Kept as a default for legacy reads; real value comes from game.totalRounds.
 const TOTAL_ROUNDS = 9;
 const ROUND_TYPES = [
   'picture-guess',
@@ -47,12 +49,13 @@ const ROUND_INFO = {
 
 class GameState {
   constructor() {
-    this.playerCount = 3;
+    this.playerCount = 2;
     this.reset();
   }
 
   reset(playerCount) {
     if (playerCount) this.playerCount = playerCount;
+    this.totalRounds = TOTAL_ROUNDS_BY_COUNT[this.playerCount] || 9;
     const defaults = [
       { name: 'Bloke #1', avatar: 'beer' },
       { name: 'Bloke #2', avatar: 'whisky' },
@@ -61,12 +64,14 @@ class GameState {
       { name: 'Bloke #5', avatar: 'shot' }
     ];
     this.players = [];
+    // 2-player mode gets an extra immunity token to even things out.
+    const startingImmunity = this.playerCount === 2 ? 2 : 1;
     for (let i = 0; i < this.playerCount; i++) {
       this.players.push({
         name: defaults[i].name,
         avatar: defaults[i].avatar,
         fingers: 0,
-        immunity: 1,
+        immunity: startingImmunity,
         roundsWon: 0
       });
     }
@@ -80,26 +85,25 @@ class GameState {
   }
 
   generateRoundOrder() {
-    // 9 rounds: shuffle types, repeat as needed to fill 9
+    const total = this.totalRounds;
     const pool = [...ROUND_TYPES, ...ROUND_TYPES, ...ROUND_TYPES]; // 18 available
     // Shuffle pool
     for (let i = pool.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [pool[i], pool[j]] = [pool[j], pool[i]];
     }
-    // Take first 9, but ensure no more than 2 of same type
+    // Take rounds, but ensure no more than 2 of same type
     this.roundOrder = [];
     const counts = {};
     for (const type of pool) {
-      if (this.roundOrder.length >= TOTAL_ROUNDS) break;
+      if (this.roundOrder.length >= total) break;
       counts[type] = (counts[type] || 0);
       if (counts[type] < 2) {
         this.roundOrder.push(type);
         counts[type]++;
       }
     }
-    // If we somehow don't have 9, fill from shuffled types
-    while (this.roundOrder.length < TOTAL_ROUNDS) {
+    while (this.roundOrder.length < total) {
       const remaining = ROUND_TYPES.filter(t => (counts[t] || 0) < 2);
       if (remaining.length === 0) break;
       const pick = remaining[Math.floor(Math.random() * remaining.length)];
@@ -107,8 +111,11 @@ class GameState {
       counts[pick] = (counts[pick] || 0) + 1;
     }
 
-    // Insert skull card at random round (rounds 3-7)
-    this.skullCardRound = 2 + Math.floor(Math.random() * 5);
+    // Skull card lands somewhere in the middle third.
+    const minR = Math.max(1, Math.floor(total / 3));
+    const maxR = Math.min(total - 2, Math.floor((total * 2) / 3));
+    const span = Math.max(1, maxR - minR + 1);
+    this.skullCardRound = minR + Math.floor(Math.random() * span);
   }
 
   get currentRoundType() {
@@ -120,19 +127,21 @@ class GameState {
   }
 
   get multiplier() {
-    if (this.currentRound < 3) return 1;
-    if (this.currentRound < 6) return 1.5;
+    const t = this.totalRounds;
+    if (this.currentRound < Math.floor(t / 3)) return 1;
+    if (this.currentRound < Math.floor((t * 2) / 3)) return 1.5;
     return 2;
   }
 
   get multiplierLabel() {
-    if (this.currentRound < 3) return 'x1';
-    if (this.currentRound < 6) return 'x1.5';
+    const m = this.multiplier;
+    if (m === 1) return 'x1';
+    if (m === 1.5) return 'x1.5';
     return 'x2';
   }
 
   get isGameOver() {
-    return this.currentRound >= TOTAL_ROUNDS;
+    return this.currentRound >= this.totalRounds;
   }
 
   applyFingers(playerIndex, amount) {

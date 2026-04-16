@@ -758,6 +758,9 @@ html, body {
 .snap-zone:nth-child(4) { background: #6B3A00; }
 .snap-zone:nth-child(5) { background: #4A0042; }
 
+/* 2 players: head-to-head, each takes full-width half */
+.snap-zones.players-2 .snap-zone { flex: 1 1 100%; }
+
 /* 3 players: top 1, bottom 2 */
 .snap-zones.players-3 .snap-zone:nth-child(1) { flex: 1 1 100%; }
 .snap-zones.players-3 .snap-zone:nth-child(2) { flex: 1 1 50%; }

@@ -1,14 +1,14 @@
-const CACHE_NAME = 'tavern-royale-v9';
+const CACHE_NAME = 'tavern-royale-v10';
 const ASSETS = [
   './',
   './index.html',
-  './css/styles.css?v=8',
-  './css/animations.css?v=8',
-  './js/cards.js?v=8',
-  './js/game.js?v=8',
-  './js/rounds.js?v=8',
-  './js/ui.js?v=8',
-  './js/app.js?v=8',
+  './css/styles.css?v=9',
+  './css/animations.css?v=9',
+  './js/cards.js?v=9',
+  './js/game.js?v=9',
+  './js/rounds.js?v=9',
+  './js/ui.js?v=9',
+  './js/app.js?v=9',
   './icons/icon-192.png',
   './icons/icon-512.png',
   './manifest.json'

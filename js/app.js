@@ -6,7 +6,7 @@
   'use strict';
 
   let game;
-  let selectedPlayerCount = 3;
+  let selectedPlayerCount = 2;
 
   // Register service worker
   if ('serviceWorker' in navigator) {
@@ -42,11 +42,11 @@
         btn.classList.add('selected');
         selectedPlayerCount = parseInt(btn.dataset.count);
 
-        // Show/hide extra player inputs
-        const p3group = document.querySelector('.player-input-group[data-player="3"]');
-        const p4group = document.querySelector('.player-input-group[data-player="4"]');
-        if (p3group) p3group.style.display = selectedPlayerCount >= 4 ? 'block' : 'none';
-        if (p4group) p4group.style.display = selectedPlayerCount >= 5 ? 'block' : 'none';
+        // Show/hide extra player inputs (players 0 & 1 always shown)
+        for (let idx = 2; idx <= 4; idx++) {
+          const group = document.querySelector(`.player-input-group[data-player="${idx}"]`);
+          if (group) group.style.display = selectedPlayerCount > idx ? 'block' : 'none';
+        }
       };
     });
 
